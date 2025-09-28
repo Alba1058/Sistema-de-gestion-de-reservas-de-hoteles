@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SGHR.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7a4e8511312789b7c2073828d54bf647515abbb1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0cae190f188e7b8857fae7b2368e85bc9922bf03")]
 [assembly: System.Reflection.AssemblyProductAttribute("SGHR.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SGHR.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
