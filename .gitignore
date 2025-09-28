@@ -1,3 +1,25 @@
-# Default ignored files
-/shelf/
-/workspace.xml
+# Visual Studio
+.vs/
+bin/
+obj/
+*.user
+*.suo
+
+
+# Build Folders
+bin/
+obj/
+
+# Logs y caches
+*.log
+*.cache
+
+# NuGet
+*.nupkg
+*.nuget.props
+*.nuget.targets
+project.nuget.cache
+
+# OS específicos
+.DS_Store
+Thumbs.db
