@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\super\\source\\repos\\SGHR.IOC\\SGHR.IOC.csproj": {}
+    "C:\\Users\\super\\OneDrive\\Documents\\GitHub2\\SGHR\\Sistema-de-gestion-de-reservas-de-hoteles\\SGHR.IOC\\SGHR.IOC.csproj": {}
   },
   "projects": {
-    "C:\\Users\\super\\source\\repos\\SGHR.IOC\\SGHR.IOC.csproj": {
+    "C:\\Users\\super\\OneDrive\\Documents\\GitHub2\\SGHR\\Sistema-de-gestion-de-reservas-de-hoteles\\SGHR.IOC\\SGHR.IOC.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\super\\source\\repos\\SGHR.IOC\\SGHR.IOC.csproj",
+        "projectUniqueName": "C:\\Users\\super\\OneDrive\\Documents\\GitHub2\\SGHR\\Sistema-de-gestion-de-reservas-de-hoteles\\SGHR.IOC\\SGHR.IOC.csproj",
         "projectName": "SGHR.IOC",
-        "projectPath": "C:\\Users\\super\\source\\repos\\SGHR.IOC\\SGHR.IOC.csproj",
+        "projectPath": "C:\\Users\\super\\OneDrive\\Documents\\GitHub2\\SGHR\\Sistema-de-gestion-de-reservas-de-hoteles\\SGHR.IOC\\SGHR.IOC.csproj",
         "packagesPath": "C:\\Users\\super\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\super\\source\\repos\\SGHR.IOC\\obj\\",
+        "outputPath": "C:\\Users\\super\\OneDrive\\Documents\\GitHub2\\SGHR\\Sistema-de-gestion-de-reservas-de-hoteles\\SGHR.IOC\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

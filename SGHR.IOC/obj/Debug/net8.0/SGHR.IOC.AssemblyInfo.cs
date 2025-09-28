@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SGHR.IOC")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7a4e8511312789b7c2073828d54bf647515abbb1")]
 [assembly: System.Reflection.AssemblyProductAttribute("SGHR.IOC")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SGHR.IOC")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
