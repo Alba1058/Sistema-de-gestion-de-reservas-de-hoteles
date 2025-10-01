@@ -10,7 +10,7 @@ namespace SGHR.Domain.Entities.Usuarios
     public sealed class Usuario : BaseEntity<int>
     {
         public string Nombre { get; set; } = null!;
-        public string Correo { get; set; } = null!;
+        public string Email { get; set; } = null!;
         public string Contrasena { get; set; } = null!;
         public int IdRolUsuario { get; set; }
     }

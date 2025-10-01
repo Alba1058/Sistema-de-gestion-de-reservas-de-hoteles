@@ -13,6 +13,8 @@ namespace SGHR.Domain.Base
         public DateTime? FechaModificacion { get; set; }
         public int? UsuarioModificacion { get; set; }
         public bool Estado { get; set; } = true;
+        public bool IsDeleted { get; set; } = false;
+
     }
 
 }

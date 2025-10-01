@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SGHR.Domain.Repositoy
+namespace SGHR.Domain.Repository
 {
 
     public interface IBaseRepository<TEntity> where TEntity : class

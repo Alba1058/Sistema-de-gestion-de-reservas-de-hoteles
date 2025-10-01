@@ -9,7 +9,7 @@ namespace SGHR.Domain.Entities.Reservas
 {
     using SGHR.Domain.Base;
 
-    public sealed class Tarifas : BaseEntity<int>
+    public sealed class Tarifa : BaseEntity<int>
     {
 
         public string Tipo { get; set; } = null!;  
