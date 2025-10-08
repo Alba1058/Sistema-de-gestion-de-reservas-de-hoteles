@@ -10,7 +10,9 @@ namespace SGHR.Domain.Enums
     {
         Disponible = 1,
         Ocupada = 2,
-        Mantenimiento = 3,
-        Reservada = 4
+        Limpieza = 3,
+        Mantenimiento = 4,
+        Reservada = 5,
+        Inactiva = 6
     }
 }

@@ -28,8 +28,16 @@ namespace SGHR.Persistence.Base
 
             try
             {
+                entity.FechaCreacion = DateTime.Now;
+                entity.UsuarioCreacion ??= 1;
+                entity.IsDeleted = false;
+
                 Entity.Add(entity);
                 await _context.SaveChangesAsync();
+
+                result.Success = true;
+                result.Message = "Entidad guardada correctamente.";
+                result.Data = entity;
             }
             catch (Exception ex)
             {
@@ -44,13 +52,20 @@ namespace SGHR.Persistence.Base
             OperationResult result = new OperationResult();
             try
             {
+                entity.FechaModificacion = DateTime.Now;
+                entity.UsuarioModificacion ??= 1;
+
                 Entity.Update(entity);
                 await _context.SaveChangesAsync();
+
+                result.Success = true;
+                result.Message = "Entidad actualizada correctamente.";
+                result.Data = entity;
             }
             catch (Exception ex)
             {
                 result.Success = false;
-                result.Message = $"Ocurrio un error guardando los datos: {ex.Message}";
+                result.Message = $"Ocurrio un error actualizando los datos: {ex.Message}";
             }
             return result;
         }
@@ -61,9 +76,15 @@ namespace SGHR.Persistence.Base
             try
             {
                 entity.IsDeleted = true;
+                entity.FechaEliminacion = DateTime.Now;
+                entity.UsuarioEliminacion ??= 1;
                 entity.FechaModificacion = DateTime.Now;
+
                 Entity.Update(entity);
                 await _context.SaveChangesAsync();
+
+                result.Success = true;
+                result.Message = "Entidad eliminada correctamente";
                 result.Data = entity;
             }
 
@@ -81,7 +102,7 @@ namespace SGHR.Persistence.Base
             var result = new OperationResult();
             try
             {
-                entity.IsDeleted = false; 
+                entity.IsDeleted = false;
                 entity.FechaModificacion = DateTime.Now;
                 Entity.Update(entity);
                 await _context.SaveChangesAsync();
@@ -101,7 +122,7 @@ namespace SGHR.Persistence.Base
 
             try
             {
-                var datos = await Entity.Where(filter).ToListAsync();
+                var datos = await Entity.Where(e => !e.IsDeleted).Where(filter).ToListAsync();
                 result.Data = datos;
             }
             catch (Exception ex)
@@ -115,18 +136,18 @@ namespace SGHR.Persistence.Base
 
         public virtual async Task<TEntity?> GetEntityByIdAsync(int id)
         {
-            return await Entity.FindAsync(id);
+            return await Entity.FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted);
         }
 
         public virtual async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> filter)
         {
 
-            return await Entity.AnyAsync(filter);
+            return await Entity.Where(e => !e.IsDeleted).AnyAsync(filter);
         }
         public virtual async Task<List<TEntity>> GetAllAsync()
         {
-            return await Entity.ToListAsync();
-        }
+            return await Entity.Where(e => !e.IsDeleted).ToListAsync();
 
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using SGHR.Domain.Entities.Reservas;
+﻿using SGHR.Domain.Base;
+using SGHR.Domain.Entities.Reservas;
 using SGHR.Domain.Repository;
 using System;
 using System.Collections.Generic;

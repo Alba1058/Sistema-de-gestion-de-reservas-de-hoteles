@@ -9,7 +9,10 @@ namespace SGHR.Domain.Enums
     public enum EstadoReserva
     {
         Activa = 1,
-        Cancelada = 2,
-        Finalizada = 3
+        Pendiente = 2,
+        Confirmada = 3,
+        Cancelada = 4,
+        Finalizada = 5,
+        Ausente = 6 //en caso de que el cliente no se presente
     }
 }

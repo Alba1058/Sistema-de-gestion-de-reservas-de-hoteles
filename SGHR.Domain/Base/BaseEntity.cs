@@ -14,7 +14,9 @@ namespace SGHR.Domain.Base
         public int? UsuarioModificacion { get; set; }
         public bool Estado { get; set; } = true;
         public bool IsDeleted { get; set; } = false;
-
+        public int? UsuarioCreacion { get; set; }
+        public int? UsuarioEliminacion { get; set; }
+        public DateTime? FechaEliminacion { get; set; }
     }
 
 }

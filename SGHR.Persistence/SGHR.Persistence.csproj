@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SGHR.Application\SGHR.Application.csproj" />
     <ProjectReference Include="..\SGHR.Domain\SGHR.Domain.csproj" />
   </ItemGroup>
 

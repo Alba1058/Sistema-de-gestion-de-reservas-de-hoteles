@@ -1,9 +1,10 @@
-﻿using System;
+﻿using SGHR.Domain.Base;
+using SGHR.Domain.Entities.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SGHR.Domain.Base;
 
 namespace SGHR.Domain.Entities.Usuarios
 {
@@ -12,6 +13,7 @@ namespace SGHR.Domain.Entities.Usuarios
         public string Nombre { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string Contrasena { get; set; } = null!;
-        public int IdRolUsuario { get; set; }
+        public int RolUsuarioId { get; set; }
+        public RolUsuario? RolUsuario { get; set; }
     }
 }
