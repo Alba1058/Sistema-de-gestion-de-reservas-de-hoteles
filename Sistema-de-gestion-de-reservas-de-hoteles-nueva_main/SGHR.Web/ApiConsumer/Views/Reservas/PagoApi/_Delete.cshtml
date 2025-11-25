@@ -1,0 +1,52 @@
+@model SGHR.Application.DTOs.Reservas.Pago.PagoDTO
+
+@if (Model == null)
+{
+    <div class="modal-header">
+        <h5 class="modal-title">Eliminar Pago</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <div class="alert alert-danger">No se encontró el pago para eliminar.</div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+    </div>
+}
+else
+{
+    <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle"></i> Eliminar Pago
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> ¿Está seguro de que desea eliminar este pago? Esta acción no se puede deshacer.
+        </div>
+        <dl class="row">
+            <dt class="col-sm-4">ID:</dt>
+            <dd class="col-sm-8"><strong>@Model.Id</strong></dd>
+            <dt class="col-sm-4">ID Reserva:</dt>
+            <dd class="col-sm-8">@Model.IdReserva</dd>
+            <dt class="col-sm-4">Monto:</dt>
+            <dd class="col-sm-8">
+                <span class="badge bg-success">@Model.Monto.ToString("C")</span>
+            </dd>
+            <dt class="col-sm-4">Fecha:</dt>
+            <dd class="col-sm-8">@Model.FechaPago.ToString("dd/MM/yyyy HH:mm")</dd>
+            <dt class="col-sm-4">Método:</dt>
+            <dd class="col-sm-8">@Model.Metodo</dd>
+        </dl>
+    </div>
+    <div class="modal-footer">
+        @Html.AntiForgeryToken()
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" onclick="deleteConfirmed(@Model.Id)">
+            <i class="bi bi-trash"></i> Eliminar
+        </button>
+    </div>
+}

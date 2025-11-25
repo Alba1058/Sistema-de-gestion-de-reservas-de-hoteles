@@ -1,0 +1,91 @@
+@model List<SGHR.Application.DTOs.Reservas.Pago.PagoDTO>
+
+@{
+    ViewData["Title"] = "Pagos";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">
+            <i class="bi bi-credit-card"></i> Gestión de Pagos
+        </h2>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="mb-3">
+        <a href="@Url.Action("Create", "PagoApi")" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo Pago
+        </a>
+    </div>
+
+    <div id="pago-list-container">
+        @await Html.PartialAsync("_List", Model ?? new List<SGHR.Application.DTOs.Reservas.Pago.PagoDTO>())
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" id="deleteModalContent"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadPagoList() {
+            $.get('@Url.Action("_List", "PagoApi")', function (data) {
+                $("#pago-list-container").html(data);
+            });
+        }
+
+        function openDeleteModal(id) {
+            $.get('@Url.Action("_Delete", "PagoApi")', { id: id })
+                .done(function (html) {
+                    $("#deleteModalContent").html(html);
+                    $("#deleteModal").modal("show");
+                })
+                .fail(function (xhr, status, error) {
+                    alert('Error al cargar el modal de eliminación: ' + (xhr.responseJSON?.message || error));
+                });
+        }
+
+        function deleteConfirmed(id) {
+            $.post('@Url.Action("_DeleteConfirmed", "PagoApi")',
+                { id: id, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() })
+                .done(function (response) {
+                    $("#deleteModal").modal("hide");
+                    if (response && response.success) {
+                        alert(response.message || 'Pago eliminado correctamente');
+                        loadPagoList();
+                    } else {
+                        alert(response?.message || 'Error desconocido al eliminar el pago.');
+                    }
+                })
+                .fail(function (xhr, status, error) {
+                    alert('Error en la solicitud de eliminación: ' + error);
+                });
+        }
+
+        $(document).ready(function() {
+            if (@Html.Raw(Model == null ? "true" : "false")) {
+                loadPagoList();
+            }
+        });
+    </script>
+}

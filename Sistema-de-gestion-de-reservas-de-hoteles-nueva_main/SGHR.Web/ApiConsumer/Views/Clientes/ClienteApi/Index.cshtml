@@ -1,0 +1,90 @@
+@model List<SGHR.Application.DTOs.Clientes.Cliente.ClienteDTO>
+
+@{
+    ViewData["Title"] = "Clientes";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary">
+            <i class="bi bi-people"></i> Gestión de Clientes
+        </h2>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="mb-3">
+        <a href="@Url.Action("Create", "ClienteApi")" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo Cliente
+        </a>
+    </div>
+
+    <div id="cliente-list-container">
+        @await Html.PartialAsync("_List", Model ?? new List<SGHR.Application.DTOs.Clientes.Cliente.ClienteDTO>())
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" id="deleteModalContent"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadClienteList() {
+            $.get('@Url.Action("_List", "ClienteApi")', function (data) {
+                $("#cliente-list-container").html(data);
+            });
+        }
+
+        function openDeleteModal(id) {
+            $.get('@Url.Action("_Delete", "ClienteApi")', { id: id })
+                .done(function (html) {
+                    $("#deleteModalContent").html(html);
+                    $("#deleteModal").modal("show");
+                })
+                .fail(function (xhr, status, error) {
+                    alert('Error al cargar el modal de eliminación: ' + (xhr.responseJSON?.message || error));
+                });
+        }
+        function deleteConfirmed(id) {
+            $.post('@Url.Action("_DeleteConfirmed", "ClienteApi")',
+                { id: id, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() })
+                .done(function (response) {
+                    $("#deleteModal").modal("hide");
+                    if (response && response.success) {
+                        alert(response.message || 'Cliente eliminado correctamente');
+                        loadClienteList();
+                    } else {
+                        alert(response?.message || 'Error desconocido al eliminar el cliente.');
+                    }
+                })
+                .fail(function (xhr, status, error) {
+                    alert('Error en la solicitud de eliminación: ' + error);
+                });
+        }
+
+        $(document).ready(function() {
+            if (@Html.Raw(Model == null ? "true" : "false")) {
+                loadClienteList();
+            }
+        });
+    </script>
+}

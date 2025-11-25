@@ -1,0 +1,43 @@
+﻿.info-card-modern {
+    background: #fff;
+    border-radius: 15px;
+    padding: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    min-height: 120px;
+}
+
+    .info-card-modern small {
+        font-size: 15px;
+    }
+
+.icon-lg {
+    font-size: 36px;
+    color: #2B4C7E;
+}
+
+.chart-box-modern, .table-box-modern {
+    background: #fff;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.table-modern thead tr {
+    background: #F1F3F7;
+}
+
+.table-modern th {
+    padding: 14px;
+    font-weight: 600;
+}
+
+.table-modern td {
+    padding: 12px;
+}
+
+.table-modern tbody tr:hover {
+    background: #F7F9FC;
+}

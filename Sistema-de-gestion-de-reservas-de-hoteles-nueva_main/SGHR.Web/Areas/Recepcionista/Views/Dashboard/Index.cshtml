@@ -1,0 +1,158 @@
+﻿@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<h2 class="dashboard-title mb-1">Panel General</h2>
+<p class="text-muted mb-4">Resumen del estado actual del hotel</p>
+
+<!-- === CARDS SUPERIORES === -->
+<div class="row g-4">
+
+    <div class="col-md-3">
+        <div class="info-card-modern">
+            <div>
+                <small class="text-muted">Reservas Hoy</small>
+                <h3 class="fw-bold mt-1">24</h3>
+            </div>
+            <i class="bi bi-calendar2-check icon-lg"></i>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="info-card-modern">
+            <div>
+                <small class="text-muted">Habitaciones Disponibles</small>
+                <h3 class="fw-bold mt-1">48</h3>
+            </div>
+            <i class="bi bi-house-door icon-lg"></i>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="info-card-modern">
+            <div>
+                <small class="text-muted">Ingresos Mensuales</small>
+                <h3 class="fw-bold mt-1 text-success">$12,430</h3>
+            </div>
+            <i class="bi bi-cash-coin icon-lg"></i>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="info-card-modern">
+            <div>
+                <small class="text-muted">Ocupación (%)</small>
+                <h3 class="fw-bold mt-1">72%</h3>
+            </div>
+            <i class="bi bi-speedometer2 icon-lg"></i>
+        </div>
+    </div>
+
+</div>
+
+<!-- === SECCIÓN PRINCIPAL === -->
+<div class="row mt-5 g-4">
+
+    <!-- Gráfica reservas -->
+    <div class="col-lg-8">
+        <div class="chart-box-modern">
+            <div class="d-flex justify-content-between">
+                <h5 class="fw-bold">Reservas por mes</h5>
+                <small class="text-muted">Últimos 12 meses</small>
+            </div>
+            <canvas id="reservasChart"></canvas>
+        </div>
+    </div>
+
+    <!-- NUEVO GRÁFICO DOUGHNUT (REEMPLAZA CALENDARIO) -->
+    <div class="col-lg-4">
+        <div class="chart-box-modern">
+            <h5 class="fw-bold mb-3">Distribución de Habitaciones</h5>
+            <canvas id="habitacionesPie"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- === TABLA === -->
+<div class="row mt-4">
+    <div class="col-lg-12">
+        <div class="table-box-modern">
+            <div class="d-flex justify-content-between mb-2">
+                <h5 class="fw-bold">Reservas recientes</h5>
+                <small class="text-muted">Últimas registradas</small>
+            </div>
+
+            <table class="table table-modern">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Habitación</th>
+                        <th>Ingreso</th>
+                        <th>Egreso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Pedro López</td>
+                        <td>101</td>
+                        <td>2025-11-18</td>
+                        <td>2025-11-21</td>
+                    </tr>
+                    <tr>
+                        <td>Mariana D.</td>
+                        <td>204</td>
+                        <td>2025-11-16</td>
+                        <td>2025-11-19</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script>
+
+        // === Gráfica barras ===
+        new Chart(document.getElementById("reservasChart"), {
+            type: 'bar',
+            data: {
+                labels: ['Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb'],
+                datasets: [{
+                    data: [90,80,120,150,130,170,200,180,150,140,155,178],
+                    backgroundColor: '#2B4C7E',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                responsive: true
+            }
+        });
+
+        // === Gráfico Doughnut moderno ===
+        new Chart(document.getElementById("habitacionesPie"), {
+            type: 'doughnut',
+            data: {
+                labels: ['Sencillas', 'Dobles', 'Suite', 'Deluxe'],
+                datasets: [{
+                    data: [45, 30, 15, 10],
+                    backgroundColor: ['#2B4C7E', '#4A6FA5', '#70A0AF', '#B8D8D8'],
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20 }
+                    }
+                }
+            }
+        });
+
+    </script>
+
+}

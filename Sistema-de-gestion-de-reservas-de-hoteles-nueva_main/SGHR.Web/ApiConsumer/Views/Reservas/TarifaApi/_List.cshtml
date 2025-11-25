@@ -1,0 +1,64 @@
+@model List<SGHR.Application.DTOs.Reservas.Tarifa.TarifaDTO>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Tipo</th>
+                <th>Monto</th>
+                <th>Precio por Noche</th>
+                <th>Fecha Inicio</th>
+                <th>Descuento</th>
+                <th>Estado</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">@item.Tipo</td>
+                        <td class="text-success fw-bold">@item.Monto.ToString("C")</td>
+                        <td>@item.PrecioPorNoche.ToString("C")</td>
+                        <td>@item.FechaInicio.ToShortDateString()</td>
+                        <td>@(item.Descuento * 100)%</td>
+                        <td>
+                            @if (item.Estado)
+                            {
+                                <span class="badge rounded-pill bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-secondary">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-nowrap text-center">
+                            <a href="@Url.Action("Details", "TarifaApi", new { id = item.Id })" class="btn btn-outline-info btn-sm me-1">
+                                <i class="bi bi-eye"></i> Detalles
+                            </a>
+                            <a href="@Url.Action("Edit", "TarifaApi", new { id = item.Id })" class="btn btn-outline-warning btn-sm me-1">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="openDeleteModal(@item.Id)">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="bi bi-currency-dollar" style="font-size: 2rem;"></i>
+                            <p class="mt-2">No hay tarifas registradas</p>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

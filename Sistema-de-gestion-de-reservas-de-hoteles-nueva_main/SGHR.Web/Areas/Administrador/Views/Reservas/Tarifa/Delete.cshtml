@@ -1,0 +1,56 @@
+@model SGHR.Application.DTOs.Reservas.Tarifa.TarifaDTO
+
+@{
+    ViewData["Title"] = "Eliminar Tarifa";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<h2 class="mt-3 text-danger">¿Seguro que deseas eliminar esta tarifa?</h2>
+
+<div class="border p-3 mt-3">
+    <h4>Información de la Tarifa</h4>
+    <dl class="row">
+        <dt class="col-sm-3">ID:</dt>
+        <dd class="col-sm-9">@Model.Id</dd>
+
+        <dt class="col-sm-3">Tipo:</dt>
+        <dd class="col-sm-9">@Model.Tipo</dd>
+
+        <dt class="col-sm-3">Monto:</dt>
+        <dd class="col-sm-9">@Model.Monto.ToString("C")</dd>
+
+        <dt class="col-sm-3">Precio por Noche:</dt>
+        <dd class="col-sm-9">@Model.PrecioPorNoche.ToString("C")</dd>
+
+        <dt class="col-sm-3">Descuento:</dt>
+        <dd class="col-sm-9">@Model.Descuento.ToString("P")</dd>
+
+        <dt class="col-sm-3">Fecha Inicio:</dt>
+        <dd class="col-sm-9">@Model.FechaInicio.ToString("dd/MM/yyyy")</dd>
+
+        <dt class="col-sm-3">Fecha Fin:</dt>
+        <dd class="col-sm-9">@Model.FechaFin.ToString("dd/MM/yyyy")</dd>
+
+        <dt class="col-sm-3">ID Habitación:</dt>
+        <dd class="col-sm-9">@Model.IdHabitacion</dd>
+
+        <dt class="col-sm-3">Estado:</dt>
+        <dd class="col-sm-9">
+            @if (Model.Estado)
+            {
+                <span class="badge bg-success">Activa</span>
+            }
+            else
+            {
+                <span class="badge bg-danger">Inactiva</span>
+            }
+        </dd>
+    </dl>
+
+    <form asp-action="DeleteConfirmed" method="post">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+

@@ -1,0 +1,16 @@
+﻿@model SGHR.Application.DTOs.Reservas.Habitacion.UpdateHabitacionDTO
+
+@{
+    ViewBag.Title = "Editar Habitación";
+}
+
+<h2>Editar Habitación</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.HiddenFor(m => m.Id)
+    @Html.Partial("_FormularioHabitacion", Model)
+
+    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    <a href="@Url.Action("Index")" class="btn btn-secondary">Volver</a>
+}

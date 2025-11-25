@@ -1,0 +1,44 @@
+﻿@model IEnumerable<SGHR.Application.DTOs.Clientes.Cliente.ClienteDTO>
+
+@{
+    ViewData["Title"] = "Lista de Clientes";
+}
+
+<h2>Lista de Clientes</h2>
+
+<hr />
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Crear Nuevo Cliente</a>
+</p>
+
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Error:</strong> @ViewBag.Error
+    </div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nombre Completo</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Identificación</th>
+        </tr>
+    </thead>
+    <tbody>
+
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Nombre @item.Apellido</td>
+                <td>@item.Email</td>
+                <td>@item.Telefono</td>
+                <td>@item.Identificacion</td>
+            </tr>
+        }
+    </tbody>
+</table>

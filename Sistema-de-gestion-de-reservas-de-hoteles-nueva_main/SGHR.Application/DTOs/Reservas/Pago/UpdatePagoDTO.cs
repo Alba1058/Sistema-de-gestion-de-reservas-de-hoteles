@@ -1,0 +1,14 @@
+﻿
+namespace SGHR.Application.DTOs.Reservas.Pago
+{
+    public class UpdatePagoDTO
+    {
+        public int Id { get; set; }
+        public int IdReserva { get; set; }
+        public decimal Monto { get; set; }
+        public DateTime FechaPago { get; set; }
+        public string Metodo { get; set; } = null!;
+        public bool Confirmado { get; set; }
+        public bool Estado { get; set; }
+    }
+}

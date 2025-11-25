@@ -1,0 +1,52 @@
+@model SGHR.Application.DTOs.Clientes.Cliente.ClienteDTO
+
+@{
+    ViewData["Title"] = "Detalles del Cliente";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Detalles del Cliente
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4 text-muted">ID:</dt>
+                        <dd class="col-sm-8"><strong>@Model.Id</strong></dd>
+
+                        <dt class="col-sm-4 text-muted">Nombre Completo:</dt>
+                        <dd class="col-sm-8">@Model.Nombre @Model.Apellido</dd>
+
+                        <dt class="col-sm-4 text-muted">Identificación:</dt>
+                        <dd class="col-sm-8">@Model.Identificacion</dd>
+
+                        <dt class="col-sm-4 text-muted">Email:</dt>
+                        <dd class="col-sm-8">@Model.Email</dd>
+
+                        <dt class="col-sm-4 text-muted">Teléfono:</dt>
+                        <dd class="col-sm-8">@Model.Telefono</dd>
+
+                        <dt class="col-sm-4 text-muted">Dirección:</dt>
+                        <dd class="col-sm-8">@Model.Direccion</dd>
+                    </dl>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("Edit", "ClienteApi", new { id = Model.Id })" class="btn btn-outline-warning">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+
+                        <a href="@Url.Action("Index", "ClienteApi")" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver a la lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

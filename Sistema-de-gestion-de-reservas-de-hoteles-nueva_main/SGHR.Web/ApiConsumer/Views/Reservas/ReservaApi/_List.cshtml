@@ -1,0 +1,104 @@
+@model List<SGHR.Application.DTOs.Reservas.Reserva.ReservaDTO>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewBag.Error
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>ID Cliente</th>
+                <th>ID Habitación</th>
+                <th>Fecha Inicio</th>
+                <th>Fecha Fin</th>
+                <th>Huéspedes</th>
+                <th>Total</th>
+                <th>Estado Reserva</th>
+                <th>Estado</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var reserva in Model)
+                {
+                    <tr>
+                        <td>@reserva.Id</td>
+                        <td>@reserva.IdCliente</td>
+                        <td>@reserva.IdHabitacion</td>
+                        <td>@reserva.FechaInicio.ToString("dd/MM/yyyy")</td>
+                        <td>@reserva.FechaFin.ToString("dd/MM/yyyy")</td>
+                        <td>@reserva.NumeroHuespedes</td>
+                        <td class="fw-bold text-success">@reserva.Total.ToString("C")</td>
+                        <td>
+                            @switch (reserva.EstadoReserva)
+                            {
+                                case 1:
+                                    <span class="badge rounded-pill bg-success">Activa</span>
+                                    break;
+                                case 2:
+                                    <span class="badge rounded-pill bg-warning">Pendiente</span>
+                                    break;
+                                case 3:
+                                    <span class="badge rounded-pill bg-info">Confirmada</span>
+                                    break;
+                                case 4:
+                                    <span class="badge rounded-pill bg-danger">Cancelada</span>
+                                    break;
+                                case 5:
+                                    <span class="badge rounded-pill bg-secondary">Finalizada</span>
+                                    break;
+                                case 6:
+                                    <span class="badge rounded-pill bg-dark">Ausente</span>
+                                    break;
+                                default:
+                                    <span class="badge rounded-pill bg-secondary">@reserva.EstadoReserva</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            @if (reserva.Estado)
+                            {
+                                <span class="badge rounded-pill bg-success">Activa</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-secondary">Inactiva</span>
+                            }
+                        </td>
+                        <td class="text-nowrap text-center">
+                            <a href="@Url.Action("Details", "ReservaApi", new { id = reserva.Id })" class="btn btn-outline-info btn-sm me-1">
+                                <i class="bi bi-eye"></i> Detalles
+                            </a>
+                            <a href="@Url.Action("Edit", "ReservaApi", new { id = reserva.Id })" class="btn btn-outline-warning btn-sm me-1">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="openDeleteModal(@reserva.Id)">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="10" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                            <p class="mt-2">No hay reservas registradas</p>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

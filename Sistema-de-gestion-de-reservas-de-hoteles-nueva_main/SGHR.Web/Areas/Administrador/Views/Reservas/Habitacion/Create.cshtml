@@ -1,0 +1,15 @@
+﻿@model SGHR.Application.DTOs.Reservas.Habitacion.CreateHabitacionDTO
+
+@{
+    ViewBag.Title = "Crear Habitación";
+}
+
+<h2>Crear Habitación</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.Partial("_FormularioHabitacion", Model)
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a href="@Url.Action("Index")" class="btn btn-secondary">Volver</a>
+}

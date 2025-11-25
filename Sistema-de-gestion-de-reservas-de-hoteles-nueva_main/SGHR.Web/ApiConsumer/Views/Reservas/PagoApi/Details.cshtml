@@ -1,0 +1,111 @@
+@model SGHR.Application.DTOs.Reservas.Pago.PagoDTO
+
+@{
+    ViewData["Title"] = "Detalles del Pago";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Detalles del Pago
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @ViewBag.Error
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Error:</strong> @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["Success"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (Model == null)
+                    {
+                        <div class="alert alert-warning">
+                            <p>No se pudo cargar la información del pago.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <dl class="row">
+                        <dt class="col-sm-4 text-muted">ID:</dt>
+                        <dd class="col-sm-8"><strong>@Model.Id</strong></dd>
+
+                        <dt class="col-sm-4 text-muted">ID Reserva:</dt>
+                        <dd class="col-sm-8">@Model.IdReserva</dd>
+
+                        <dt class="col-sm-4 text-muted">Monto:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-success fs-6">@Model.Monto.ToString("C")</span>
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Fecha de Pago:</dt>
+                        <dd class="col-sm-8">@Model.FechaPago.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                        <dt class="col-sm-4 text-muted">Método:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-primary">@Model.Metodo</span>
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Confirmado:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Confirmado)
+                            {
+                                <span class="badge rounded-pill bg-success">Sí</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-warning text-dark">No</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Estado:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Estado)
+                            {
+                                <span class="badge rounded-pill bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-secondary">Inactivo</span>
+                            }
+                        </dd>
+                    </dl>
+                    }
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex gap-2">
+                        @if (Model != null)
+                        {
+                            <a href="@Url.Action("Edit", "PagoApi", new { id = Model.Id })" class="btn btn-outline-warning">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                        }
+                        <a href="@Url.Action("Index", "PagoApi")" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver a la Lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

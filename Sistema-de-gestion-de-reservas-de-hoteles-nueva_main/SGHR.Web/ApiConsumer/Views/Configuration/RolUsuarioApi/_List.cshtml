@@ -1,0 +1,68 @@
+@model IEnumerable<SGHR.Application.DTOs.Configuration.RolUsuario.RolUsuarioDTO>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewBag.Error
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>@Html.DisplayNameFor(model => model.Nombre)</th>
+                <th>@Html.DisplayNameFor(model => model.Descripcion)</th>
+                <th>@Html.DisplayNameFor(model => model.Estado)</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Id</td>
+                        <td class="fw-bold">@item.Nombre</td>
+                        <td>@item.Descripcion</td>
+                        <td>
+                            @if (item.Estado)
+                            {
+                                <span class="badge rounded-pill bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-secondary">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-nowrap text-center">
+                            <a href="@Url.Action("Details", "RolUsuarioApi", new { id = item.Id })" class="btn btn-outline-info btn-sm me-1">
+                                <i class="bi bi-eye"></i> Detalles
+                            </a>
+                            <a href="@Url.Action("Edit", "RolUsuarioApi", new { id = item.Id })" class="btn btn-outline-warning btn-sm me-1">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="openDeleteModal(@item.Id)">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <div class="text-muted">
+                            <i class="bi bi-shield-lock" style="font-size: 2rem;"></i>
+                            <p class="mt-2">No hay roles registrados</p>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,71 @@
+@model SGHR.Application.DTOs.Reservas.Reserva.ReservaDTO
+
+@if (Model == null)
+{
+    <div class="modal-header">
+        <h5 class="modal-title">Eliminar Reserva</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <div class="alert alert-danger">No se encontró la reserva para eliminar.</div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+    </div>
+}
+else
+{
+    <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle"></i> Eliminar Reserva
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> ¿Está seguro de que desea eliminar esta reserva? Esta acción no se puede deshacer.
+        </div>
+        <dl class="row">
+            <dt class="col-sm-4">ID:</dt>
+            <dd class="col-sm-8"><strong>@Model.Id</strong></dd>
+            <dt class="col-sm-4">ID Cliente:</dt>
+            <dd class="col-sm-8">@Model.IdCliente</dd>
+            <dt class="col-sm-4">ID Habitación:</dt>
+            <dd class="col-sm-8">@Model.IdHabitacion</dd>
+            <dt class="col-sm-4">Fechas:</dt>
+            <dd class="col-sm-8">@Model.FechaInicio.ToString("dd/MM/yyyy") - @Model.FechaFin.ToString("dd/MM/yyyy")</dd>
+            <dt class="col-sm-4">Total:</dt>
+            <dd class="col-sm-8">
+                <span class="badge bg-success">@Model.Total.ToString("C")</span>
+            </dd>
+            <dt class="col-sm-4">Estado:</dt>
+            <dd class="col-sm-8">
+                @switch (Model.EstadoReserva)
+                {
+                    case 0:
+                        <span class="badge bg-success">Activa</span>
+                        break;
+                    case 1:
+                        <span class="badge bg-danger">Cancelada</span>
+                        break;
+                    case 2:
+                        <span class="badge bg-secondary">Finalizada</span>
+                        break;
+                    default:
+                        <span class="badge bg-secondary">@Model.EstadoReserva</span>
+                        break;
+                }
+            </dd>
+        </dl>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" onclick="deleteConfirmed(@Model.Id)">
+            <i class="bi bi-trash"></i> Eliminar
+        </button>
+        @Html.AntiForgeryToken()
+    </div>
+}

@@ -1,0 +1,113 @@
+@model SGHR.Application.DTOs.Reservas.Reserva.ReservaDTO
+
+@{
+    ViewData["Title"] = "Detalles de la Reserva";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Detalles de la Reserva
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Error:</strong> @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["Success"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <dl class="row">
+                        <dt class="col-sm-4 text-muted">ID:</dt>
+                        <dd class="col-sm-8"><strong>@Model.Id</strong></dd>
+
+                        <dt class="col-sm-4 text-muted">ID Cliente:</dt>
+                        <dd class="col-sm-8">@Model.IdCliente</dd>
+
+                        <dt class="col-sm-4 text-muted">ID Habitación:</dt>
+                        <dd class="col-sm-8">@Model.IdHabitacion</dd>
+
+                        <dt class="col-sm-4 text-muted">Fecha Inicio:</dt>
+                        <dd class="col-sm-8">@Model.FechaInicio.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                        <dt class="col-sm-4 text-muted">Fecha Fin:</dt>
+                        <dd class="col-sm-8">@Model.FechaFin.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                        <dt class="col-sm-4 text-muted">Número de Huéspedes:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-primary">@Model.NumeroHuespedes</span>
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Total:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-success fs-6">@Model.Total.ToString("C")</span>
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Estado Reserva:</dt>
+                        <dd class="col-sm-8">
+                            @switch (Model.EstadoReserva)
+                            {
+                                case 1:
+                                    <span class="badge rounded-pill bg-success">Activa</span>
+                                    break;
+                                case 2:
+                                    <span class="badge rounded-pill bg-warning">Pendiente</span>
+                                    break;
+                                case 3:
+                                    <span class="badge rounded-pill bg-info">Confirmada</span>
+                                    break;
+                                case 4:
+                                    <span class="badge rounded-pill bg-danger">Cancelada</span>
+                                    break;
+                                case 5:
+                                    <span class="badge rounded-pill bg-secondary">Finalizada</span>
+                                    break;
+                                case 6:
+                                    <span class="badge rounded-pill bg-dark">Ausente</span>
+                                    break;
+                                default:
+                                    <span class="badge rounded-pill bg-secondary">@Model.EstadoReserva</span>
+                                    break;
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4 text-muted">Estado:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.Estado)
+                            {
+                                <span class="badge rounded-pill bg-success">Activa</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-secondary">Inactiva</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex gap-2">
+                        <a href="@Url.Action("Edit", "ReservaApi", new { id = Model.Id })" class="btn btn-outline-warning">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                        <a href="@Url.Action("Index", "ReservaApi")" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver a la lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

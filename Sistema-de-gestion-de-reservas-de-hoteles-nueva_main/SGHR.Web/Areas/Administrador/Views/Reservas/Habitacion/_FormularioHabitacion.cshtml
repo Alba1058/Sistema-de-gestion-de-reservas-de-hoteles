@@ -1,0 +1,43 @@
+﻿@model SGHR.Application.DTOs.Reservas.Habitacion.CreateHabitacionDTO
+
+<div class="form-group">
+    @Html.LabelFor(m => m.Numero)
+    @Html.TextBoxFor(m => m.Numero, new { @class = "form-control" })
+    @Html.ValidationMessageFor(m => m.Numero)
+</div>
+
+<div class="form-group">
+    @Html.LabelFor(m => m.IdCategoria, "Categoría")
+    @Html.TextBoxFor(m => m.IdCategoria, new { @class = "form-control" })
+    @Html.ValidationMessageFor(m => m.IdCategoria)
+</div>
+
+<div class="form-group">
+    @Html.LabelFor(m => m.IdPiso, "Piso")
+    @Html.TextBoxFor(m => m.IdPiso, new { @class = "form-control" })
+    @Html.ValidationMessageFor(m => m.IdPiso)
+</div>
+
+<div class="form-group">
+    @Html.LabelFor(m => m.EstadoHabitacion, "Estado de Habitación")
+    @Html.TextBoxFor(m => m.EstadoHabitacion, new { @class = "form-control" })
+    @Html.ValidationMessageFor(m => m.EstadoHabitacion)
+</div>
+
+<div class="form-group">
+    @Html.LabelFor(m => m.PrecioBase)
+    @Html.TextBoxFor(m => m.PrecioBase, new { @class = "form-control" })
+    @Html.ValidationMessageFor(m => m.PrecioBase)
+</div>
+
+<div class="form-group">
+    @Html.LabelFor(m => m.Descripcion)
+    @Html.TextAreaFor(m => m.Descripcion, new { @class = "form-control" })
+    @Html.ValidationMessageFor(m => m.Descripcion)
+</div>
+
+<div class="form-group">
+    @Html.LabelFor(m => m.Estado)
+    @Html.CheckBoxFor(m => m.Estado)
+    @Html.ValidationMessageFor(m => m.Estado)
+</div>

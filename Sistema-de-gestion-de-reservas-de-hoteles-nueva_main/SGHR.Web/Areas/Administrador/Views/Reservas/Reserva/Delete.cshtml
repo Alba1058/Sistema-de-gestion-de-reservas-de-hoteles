@@ -1,0 +1,23 @@
+﻿@model SGHR.Application.DTOs.Reservas.Reserva.ReservaDTO
+
+@{
+    ViewData["Title"] = "Eliminar Reserva";
+}
+
+<h2 class="mt-3 text-danger">¿Seguro que deseas eliminar esta reserva?</h2>
+
+<div class="border p-3">
+
+    <p><strong>ID:</strong> @Model.Id</p>
+    <p><strong>Cliente:</strong> @Model.IdCliente</p>
+    <p><strong>Habitación:</strong> @Model.IdHabitacion</p>
+    <p><strong>Fecha:</strong> @Model.FechaInicio.ToShortDateString() - @Model.FechaFin.ToShortDateString()</p>
+    <p><strong>Total:</strong> @Model.Total</p>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <button class="btn btn-danger">Eliminar</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+
+</div>

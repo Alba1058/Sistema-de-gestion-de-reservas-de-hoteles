@@ -1,0 +1,48 @@
+@model SGHR.Application.DTOs.Configuration.RolUsuario.RolUsuarioDTO
+
+@{
+    ViewData["Title"] = "Eliminar Rol de Usuario";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<h2 class="mt-3 text-danger">¿Seguro que deseas eliminar este rol de usuario?</h2>
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @ViewBag.ErrorMessage
+    </div>
+}
+
+<div class="border p-3 mt-3">
+    <h4>Información del Rol</h4>
+    <dl class="row">
+        <dt class="col-sm-3">ID:</dt>
+        <dd class="col-sm-9">@Model.Id</dd>
+
+        <dt class="col-sm-3">Nombre:</dt>
+        <dd class="col-sm-9">@Model.Nombre</dd>
+
+        <dt class="col-sm-3">Descripción:</dt>
+        <dd class="col-sm-9">@(Model.Descripcion ?? "Sin descripción")</dd>
+
+        <dt class="col-sm-3">Estado:</dt>
+        <dd class="col-sm-9">
+            @if (Model.Estado)
+            {
+                <span class="badge bg-success">Activo</span>
+            }
+            else
+            {
+                <span class="badge bg-danger">Inactivo</span>
+            }
+        </dd>
+    </dl>
+
+    <form asp-action="DeleteConfirmed" method="post">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+

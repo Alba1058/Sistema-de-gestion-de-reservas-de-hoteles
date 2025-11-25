@@ -1,0 +1,41 @@
+﻿@model List<SGHR.Application.DTOs.Reservas.Habitacion.HabitacionDTO>
+
+@{
+    ViewBag.Title = "Listado de Habitaciones";
+}
+
+<h2>Habitaciones</h2>
+
+<a href="@Url.Action("Create")" class="btn btn-success">Nueva Habitación</a>
+
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            <th>Número</th>
+            <th>Categoría</th>
+            <th>Piso</th>
+            <th>Estado Habitación</th>
+            <th>Precio Base</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var h in Model)
+        {
+            <tr>
+                <td>@h.Numero</td>
+                <td>@h.IdCategoria</td>
+                <td>@h.IdPiso</td>
+                <td>@h.EstadoHabitacion</td>
+                <td>@h.PrecioBase</td>
+                <td>@(h.Estado ? "Activa" : "Inactiva")</td>
+                <td>
+                    <a href="@Url.Action("Edit", new { id = h.Id })" class="btn btn-warning btn-sm">Editar</a>
+                    <a href="@Url.Action("Details", new { id = h.Id })" class="btn btn-info btn-sm">Detalles</a>
+                    <a href="@Url.Action("Delete", new { id = h.Id })" class="btn btn-danger btn-sm">Eliminar</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

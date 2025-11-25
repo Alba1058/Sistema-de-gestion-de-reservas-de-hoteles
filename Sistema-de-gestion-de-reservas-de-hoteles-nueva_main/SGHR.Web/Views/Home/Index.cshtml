@@ -1,0 +1,193 @@
+﻿@{
+    ViewData["Title"] = "Sistema de Gestión de Reservas de Hoteles";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+<div class="container-fluid mt-4">
+    <div class="text-center mb-5">
+        <h1 class="display-4 text-primary mb-3">
+            <i class="bi bi-building"></i> Sistema de Gestión de Reservas de Hoteles
+        </h1>
+        <p class="lead text-muted">Selecciona un módulo para gestionar</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Clientes -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-people-fill text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Clientes</h5>
+                    <p class="card-text text-muted">Gestión de clientes del hotel</p>
+                    <a href="@Url.Action("Index", "ClienteApi")" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usuarios -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-person-badge-fill text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Usuarios</h5>
+                    <p class="card-text text-muted">Gestión de usuarios del sistema</p>
+                    <a href="@Url.Action("Index", "UsuarioApi")" class="btn btn-success">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservas -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-calendar-check-fill text-info" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Reservas</h5>
+                    <p class="card-text text-muted">Gestión de reservas</p>
+                    <a href="@Url.Action("Index", "ReservaApi")" class="btn btn-info text-white">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Habitaciones -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-door-open-fill text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Habitaciones</h5>
+                    <p class="card-text text-muted">Gestión de habitaciones</p>
+                    <a href="@Url.Action("Index", "HabitacionApi")" class="btn btn-warning">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagos -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-credit-card-fill text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Pagos</h5>
+                    <p class="card-text text-muted">Gestión de pagos</p>
+                    <a href="@Url.Action("Index", "PagoApi")" class="btn btn-danger">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarifas -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-currency-dollar text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Tarifas</h5>
+                    <p class="card-text text-muted">Gestión de tarifas</p>
+                    <a href="@Url.Action("Index", "TarifaApi")" class="btn btn-success">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Servicios Adicionales -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-star-fill text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Servicios Adicionales</h5>
+                    <p class="card-text text-muted">Gestión de servicios adicionales</p>
+                    <a href="@Url.Action("Index", "ServicioAdicionalApi")" class="btn btn-warning">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categorías -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-tags-fill text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Categorías</h5>
+                    <p class="card-text text-muted">Gestión de categorías</p>
+                    <a href="@Url.Action("Index", "CategoriaApi")" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pisos -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-layers-fill text-info" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Pisos</h5>
+                    <p class="card-text text-muted">Gestión de pisos</p>
+                    <a href="@Url.Action("Index", "PisoApi")" class="btn btn-info text-white">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Roles de Usuario -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 hover-shadow">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-shield-check-fill text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="card-title">Roles de Usuario</h5>
+                    <p class="card-text text-muted">Gestión de roles de usuario</p>
+                    <a href="@Url.Action("Index", "RolUsuarioApi")" class="btn btn-success">
+                        <i class="bi bi-box-arrow-in-right"></i> Acceder
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-shadow {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    .card {
+        border-radius: 10px;
+    }
+</style>
