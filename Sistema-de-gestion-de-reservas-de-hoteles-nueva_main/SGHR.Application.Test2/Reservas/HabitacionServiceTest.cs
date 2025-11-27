@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SGHR.Application.DTOs.Reservas.Habitacion;
 using SGHR.Application.Services.Reservas;
@@ -38,18 +37,11 @@ namespace SGHR.Application.Test2.Reservas
 
             var loggerHabitacionRepo = _loggerFactory.CreateLogger<HabitacionRepository>();
             var loggerPisoRepo = _loggerFactory.CreateLogger<PisoRepository>();
+            var loggerCategoriaRepo = _loggerFactory.CreateLogger<CategoriaRepository>();
             var loggerService = _loggerFactory.CreateLogger<HabitacionService>();
 
-            var configuracionEnMemoria = new Dictionary<string, string?>
-{
-              {"ConnectionStrings:SghrConnString", "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=SGHR;Integrated Security=True;"}
-            };
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(configuracionEnMemoria)
-                .Build();
-
             _repoHabitacion = new HabitacionRepository(_contexto, loggerHabitacionRepo);
-            _repoCategoria = new CategoriaRepositoryAdo(configuration);
+            _repoCategoria = new CategoriaRepository(_contexto, loggerCategoriaRepo);
             _repoPiso = new PisoRepository(_contexto, loggerPisoRepo);
 
             _servicio = new HabitacionService(_repoHabitacion, _repoCategoria, _repoPiso, loggerService);
