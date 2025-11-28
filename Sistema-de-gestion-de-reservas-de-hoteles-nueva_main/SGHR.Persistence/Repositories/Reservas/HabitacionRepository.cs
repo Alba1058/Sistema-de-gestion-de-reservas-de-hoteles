@@ -19,6 +19,36 @@ namespace SGHR.Persistence.Repositories.Reservas
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        public override async Task<List<Habitacion>> GetAllAsync()
+        {
+            try
+            {
+                _logger.LogInformation("HabitacionRepository.GetAllAsync: Iniciando consulta a la base de datos");
+                
+                if (_entities == null)
+                {
+                    _logger.LogError("HabitacionRepository.GetAllAsync: _entities es null");
+                    return new List<Habitacion>();
+                }
+
+                var habitaciones = await _entities.ToListAsync();
+                _logger.LogInformation("HabitacionRepository.GetAllAsync: Se obtuvieron {Count} habitaciones de la base de datos", habitaciones?.Count ?? 0);
+                
+                if (habitaciones == null)
+                {
+                    _logger.LogWarning("HabitacionRepository.GetAllAsync: La consulta devolvió null");
+                    return new List<Habitacion>();
+                }
+                
+                return habitaciones;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "HabitacionRepository.GetAllAsync: Error al obtener habitaciones de la base de datos: {Message}. StackTrace: {StackTrace}", ex.Message, ex.StackTrace);
+                throw;
+            }
+        }
+
         public override async Task<OperationResult<Habitacion>> SaveEntityAsync(Habitacion entity)
         {
             try

@@ -172,7 +172,7 @@ namespace SGHR.Application.Test2.Reservas
             var resultado = await _servicio.GetByIdAsync(habitacion.Id);
 
             Assert.False(resultado.Success);
-            Assert.Equal("Habitación no encontrada.", resultado.Message);
+            Assert.Equal("Habitación no encontrado.", resultado.Message);
         }
 
         [Fact]

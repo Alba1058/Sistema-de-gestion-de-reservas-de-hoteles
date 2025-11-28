@@ -81,7 +81,7 @@
                             <a href="@Url.Action("Edit", "ReservaApi", new { id = reserva.Id })" class="btn btn-outline-warning btn-sm me-1">
                                 <i class="bi bi-pencil"></i> Editar
                             </a>
-                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="openDeleteModal(@reserva.Id)">
+                            <button type="button" class="btn btn-outline-danger btn-sm btn-delete-reserva" data-reserva-id="@reserva.Id">
                                 <i class="bi bi-trash"></i> Eliminar
                             </button>
                         </td>

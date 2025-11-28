@@ -9,65 +9,52 @@ using SGHR.Persistence.Interfaces.Reservas;
 
 namespace SGHR.Application.Services.Reservas
 {
-    public sealed class TarifaService : ITarifaService
+    public sealed class TarifaService : BaseService, ITarifaService
     {
         private readonly ITarifaRepository _tarifaRepository;
-        private readonly ILogger<TarifaService> _logger;
 
         public TarifaService(ITarifaRepository tarifaRepository, ILogger<TarifaService> logger)
+            : base(logger)
         {
             _tarifaRepository = tarifaRepository;
-            _logger = logger;
         }
 
         public async Task<OperationResult<List<TarifaDTO>>> GetAllAsync()
         {
-            try
-            {
-                var tarifas = await _tarifaRepository.GetAllAsync();
-                var dtoList = tarifas.Where(t => !t.IsDeleted)
-                                     .Select(TarifaMapper.ToTarifaDto)
-                                     .ToList();
-
-                return OperationResult<List<TarifaDTO>>.Ok(dtoList, "Tarifas obtenidas correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error obteniendo tarifas");
-                return OperationResult<List<TarifaDTO>>.Fail("Error interno al obtener las tarifas.");
-            }
+            return await GetAllEntitiesAsync<Tarifa, TarifaDTO>(
+                _tarifaRepository.GetAllAsync,
+                TarifaMapper.ToTarifaDto,
+                "Tarifas");
         }
 
         public async Task<OperationResult<TarifaDTO>> GetByIdAsync(int id)
         {
-            try
+            return await ExecuteOperationAsync<TarifaDTO>(async () =>
             {
-                if (id <= 0)
-                    return OperationResult<TarifaDTO>.Fail("El ID de la tarifa no es válido.");
+                if (!ValidationHelper.IsValidId(id, "Tarifa", out var msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
 
                 var entity = await _tarifaRepository.GetEntityByIdAsync(id);
-                if (entity == null)
-                    return OperationResult<TarifaDTO>.Fail("Tarifa no encontrada.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Tarifa", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
 
                 var dto = TarifaMapper.ToTarifaDto(entity);
                 return OperationResult<TarifaDTO>.Ok(dto, "Tarifa obtenida correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error obteniendo tarifa por Id");
-                return OperationResult<TarifaDTO>.Fail("Error interno al obtener la tarifa.");
-            }
+            }, "Error interno al obtener la tarifa.");
         }
 
         public async Task<OperationResult<TarifaDTO>> CreateAsync(CreateTarifaDTO dto)
         {
-            try
+            return await ExecuteOperationAsync<TarifaDTO>(async () =>
             {
-                // Validaciones
-                if (!ValidationHelper.NotNull(dto, "Tarifa", out var msg)) return OperationResult<TarifaDTO>.Fail(msg);
-                if (!ValidationHelper.Required(dto.Tipo, "Tipo", out msg)) return OperationResult<TarifaDTO>.Fail(msg);
-                if (!ValidationHelper.MaxLength(dto.Tipo, 100, "Tipo", out msg)) return OperationResult<TarifaDTO>.Fail(msg);
-                if (!ValidationHelper.MaxLength(dto.Descripcion, 250, "Descripción", out msg)) return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.NotNull(dto, "Tarifa", out var msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Tipo, "Tipo", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.MaxLength(dto.Tipo, 100, "Tipo", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.MaxLength(dto.Descripcion, 250, "Descripción", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
 
                 if (dto.Monto <= 0)
                     return OperationResult<TarifaDTO>.Fail("El monto debe ser mayor que cero.");
@@ -86,28 +73,28 @@ namespace SGHR.Application.Services.Reservas
 
                 var createdDto = TarifaMapper.ToTarifaDto(saveResult.Data!);
                 return OperationResult<TarifaDTO>.Ok(createdDto, "Tarifa creada correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al crear tarifa");
-                return OperationResult<TarifaDTO>.Fail("Error interno al crear la tarifa.");
-            }
+            }, "Error interno al crear la tarifa.");
         }
 
         public async Task<OperationResult<TarifaDTO>> UpdateAsync(UpdateTarifaDTO dto)
         {
-            try
+            return await ExecuteOperationAsync<TarifaDTO>(async () =>
             {
-                if (dto.Id <= 0) return OperationResult<TarifaDTO>.Fail("El ID no es válido.");
-                if (!ValidationHelper.NotNull(dto, "Tarifa", out var msg)) return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.IsValidId(dto.Id, "Tarifa", out var msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.NotNull(dto, "Tarifa", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
 
                 var entity = await _tarifaRepository.GetEntityByIdAsync(dto.Id);
-                if (entity == null) return OperationResult<TarifaDTO>.Fail("Tarifa no encontrada.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Tarifa", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
 
-                // Validaciones
-                if (!ValidationHelper.Required(dto.Tipo, "Tipo", out msg)) return OperationResult<TarifaDTO>.Fail(msg);
-                if (!ValidationHelper.MaxLength(dto.Tipo, 100, "Tipo", out msg)) return OperationResult<TarifaDTO>.Fail(msg);
-                if (!ValidationHelper.MaxLength(dto.Descripcion, 250, "Descripción", out msg)) return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Tipo, "Tipo", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.MaxLength(dto.Tipo, 100, "Tipo", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
+                if (!ValidationHelper.MaxLength(dto.Descripcion, 250, "Descripción", out msg))
+                    return OperationResult<TarifaDTO>.Fail(msg);
 
                 if (dto.Monto <= 0)
                     return OperationResult<TarifaDTO>.Fail("El monto debe ser mayor que cero.");
@@ -126,36 +113,26 @@ namespace SGHR.Application.Services.Reservas
 
                 var dtoResult = TarifaMapper.ToTarifaDto(updateOp.Data!);
                 return OperationResult<TarifaDTO>.Ok(dtoResult, "Tarifa actualizada correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al actualizar tarifa");
-                return OperationResult<TarifaDTO>.Fail("Error interno al actualizar la tarifa.");
-            }
+            }, "Error interno al actualizar la tarifa.");
         }
 
         public async Task<OperationResult<bool>> RemoveAsync(DeleteTarifaDTO dto)
         {
-            try
+            return await ExecuteOperationAsync(async () =>
             {
-                if (dto.Id <= 0)
-                    return OperationResult<bool>.Fail("El ID no es válido.");
+                if (!ValidationHelper.IsValidId(dto.Id, "Tarifa", out var msg))
+                    return OperationResult<bool>.Fail(msg);
 
                 var entity = await _tarifaRepository.GetEntityByIdAsync(dto.Id);
-                if (entity == null)
-                    return OperationResult<bool>.Fail("Tarifa no encontrada.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Tarifa", out msg))
+                    return OperationResult<bool>.Fail(msg);
 
                 var delOp = await _tarifaRepository.DeleteEntityAsync(entity);
                 if (!delOp.Success)
                     return OperationResult<bool>.Fail(delOp.Message);
 
                 return OperationResult<bool>.Ok(true, "Tarifa eliminada correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al eliminar tarifa");
-                return OperationResult<bool>.Fail("Error interno al eliminar la tarifa.");
-            }
+            }, "Error interno al eliminar la tarifa.");
         }
     }
 }

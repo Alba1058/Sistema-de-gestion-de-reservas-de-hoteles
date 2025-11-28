@@ -8,6 +8,5 @@ namespace SGHR.Persistence.Interfaces.Reservas
     {
         Task<OperationResult<List<Reserva>>> GetReservasPorFechaAsync(DateTime inicio, DateTime fin);
         Task<OperationResult<List<Reserva>>> GetReservasPorClienteAsync(int clienteId);
-        Task<OperationResult<bool>> CancelarReservaAsync(int reservaId);
     }
 }

@@ -22,20 +22,24 @@ namespace SGHR.Persistence.Repositories.Clientes
             _logger = logger;
         }
 
+        public override async Task<List<Cliente>> GetAllAsync()
+        {
+            try
+            {
+                _logger.LogInformation("ClienteRepository.GetAllAsync: Iniciando consulta a la base de datos");
+                var clientes = await _entities.ToListAsync();
+                _logger.LogInformation("ClienteRepository.GetAllAsync: Se obtuvieron {Count} clientes de la base de datos", clientes.Count);
+                return clientes;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ClienteRepository.GetAllAsync: Error al obtener clientes de la base de datos: {Message}", ex.Message);
+                throw;
+            }
+        }
+
         public override async Task<OperationResult<Cliente>> SaveEntityAsync(Cliente entity)
         {
-            if (entity == null)
-                return OperationResult<Cliente>.Fail("El cliente no puede ser nulo.");
-
-            if (string.IsNullOrWhiteSpace(entity.Nombre))
-                return OperationResult<Cliente>.Fail("El nombre del cliente no puede estar vacío.");
-
-            if (string.IsNullOrWhiteSpace(entity.Identificacion))
-                return OperationResult<Cliente>.Fail("La identificación no puede estar vacía.");
-
-            if (await _context.Clientes.AnyAsync(c => c.Identificacion == entity.Identificacion && !c.IsDeleted))
-                return OperationResult<Cliente>.Fail("Ya existe un cliente con esa identificación.");
-
             try
             {
                 var result = await base.SaveEntityAsync(entity);
@@ -58,28 +62,14 @@ namespace SGHR.Persistence.Repositories.Clientes
         {
             try
             {
-                var existing = await _context.Clientes.FindAsync(entity.Id);
-                if (existing == null)
-                    return OperationResult<Cliente>.Fail("Cliente no encontrado.");
+                var result = await base.UpdateEntityAsync(entity);
 
-                if (await _context.Clientes.AnyAsync(c => c.Identificacion == entity.Identificacion && c.Id != entity.Id && !c.IsDeleted))
-                    return OperationResult<Cliente>.Fail("Ya existe otro cliente con esa identificación.");
+                if (result.Success)
+                    _logger.LogInformation("Cliente {Nombre} actualizado correctamente con ID {Id}", entity.Nombre, entity.Id);
+                else
+                    _logger.LogWarning("Error al actualizar cliente: {Mensaje}", result.Message);
 
-                existing.Nombre = entity.Nombre;
-                existing.Apellido = entity.Apellido;
-                existing.Identificacion = entity.Identificacion;
-                existing.Telefono = entity.Telefono;
-                existing.Email = entity.Email;
-                existing.Direccion = entity.Direccion;
-                existing.UsuarioModificacion = entity.UsuarioModificacion;
-                existing.FechaModificacion = DateTime.Now;
-
-                _context.Clientes.Update(existing);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Cliente {Nombre} actualizado correctamente con ID {Id}", existing.Nombre, existing.Id);
-
-                return OperationResult<Cliente>.Ok(existing, "Cliente actualizado correctamente.");
+                return result;
             }
             catch (Exception ex)
             {

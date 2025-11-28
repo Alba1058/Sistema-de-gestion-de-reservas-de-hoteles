@@ -1,41 +1,262 @@
 ﻿@model List<SGHR.Application.DTOs.Reservas.Habitacion.HabitacionDTO>
+@using SGHR.Application.DTOs.Configuration.Categoria
+@using SGHR.Application.DTOs.Configuration.Piso
+@using SGHR.Domain.Enums
 
 @{
-    ViewBag.Title = "Listado de Habitaciones";
+    ViewData["Title"] = "Gestión de Habitaciones";
+    var categorias = ViewBag.Categorias as List<CategoriaDTO> ?? new List<CategoriaDTO>();
+    var pisos = ViewBag.Pisos as List<PisoDTO> ?? new List<PisoDTO>();
 }
 
-<h2>Habitaciones</h2>
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="dashboard-title mb-1">
+                <i class="bi bi-bed"></i> Gestión de Habitaciones
+            </h2>
+            <p class="text-muted mb-0">Administra las habitaciones del hotel</p>
+        </div>
+        <a href="@Url.Action("Create")" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Nueva Habitación
+        </a>
+    </div>
 
-<a href="@Url.Action("Create")" class="btn btn-success">Nueva Habitación</a>
+    <!-- Alertas -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-<table class="table table-striped mt-3">
-    <thead>
-        <tr>
-            <th>Número</th>
-            <th>Categoría</th>
-            <th>Piso</th>
-            <th>Estado Habitación</th>
-            <th>Precio Base</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var h in Model)
-        {
-            <tr>
-                <td>@h.Numero</td>
-                <td>@h.IdCategoria</td>
-                <td>@h.IdPiso</td>
-                <td>@h.EstadoHabitacion</td>
-                <td>@h.PrecioBase</td>
-                <td>@(h.Estado ? "Activa" : "Inactiva")</td>
-                <td>
-                    <a href="@Url.Action("Edit", new { id = h.Id })" class="btn btn-warning btn-sm">Editar</a>
-                    <a href="@Url.Action("Details", new { id = h.Id })" class="btn btn-info btn-sm">Detalles</a>
-                    <a href="@Url.Action("Delete", new { id = h.Id })" class="btn btn-danger btn-sm">Eliminar</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <!-- Tarjetas de resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Total Habitaciones</small>
+                            <h3 class="mb-0">@Model.Count</h3>
+                        </div>
+                        <div class="text-primary" style="font-size: 2.5rem;">
+                            <i class="bi bi-door-open"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Disponibles</small>
+                            <h3 class="mb-0 text-success">@Model.Count(h => h.EstadoHabitacion == (int)EstadoHabitacion.Disponible)</h3>
+                        </div>
+                        <div class="text-success" style="font-size: 2.5rem;">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Ocupadas</small>
+                            <h3 class="mb-0 text-warning">@Model.Count(h => h.EstadoHabitacion == (int)EstadoHabitacion.Ocupada)</h3>
+                        </div>
+                        <div class="text-warning" style="font-size: 2.5rem;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Precio Promedio</small>
+                            <h3 class="mb-0 text-info">
+                                @(Model.Any() ? Model.Average(h => h.PrecioBase).ToString("C") : "$0.00")
+                            </h3>
+                        </div>
+                        <div class="text-info" style="font-size: 2.5rem;">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de habitaciones -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="bi bi-hash"></i> Número</th>
+                                <th><i class="bi bi-tags"></i> Categoría</th>
+                                <th><i class="bi bi-building"></i> Piso</th>
+                                <th><i class="bi bi-info-circle"></i> Estado Habitación</th>
+                                <th><i class="bi bi-currency-dollar"></i> Precio Base</th>
+                                <th><i class="bi bi-card-text"></i> Descripción</th>
+                                <th><i class="bi bi-toggle-on"></i> Activa</th>
+                                <th class="text-center" style="min-width: 400px;"><i class="bi bi-gear"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var habitacion in Model)
+                            {
+                                var categoria = categorias.FirstOrDefault(c => c.Id == habitacion.IdCategoria);
+                                var piso = pisos.FirstOrDefault(p => p.Id == habitacion.IdPiso);
+                                var estadoHabitacion = (EstadoHabitacion)habitacion.EstadoHabitacion;
+                                
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary fs-6">#@habitacion.Numero</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@(categoria?.Nombre ?? $"Categoría {habitacion.IdCategoria}")</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">Piso @(piso?.Numero ?? habitacion.IdPiso)</span>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var estadoClass = estadoHabitacion switch
+                                            {
+                                                EstadoHabitacion.Disponible => "success",
+                                                EstadoHabitacion.Ocupada => "warning",
+                                                EstadoHabitacion.Limpieza => "info",
+                                                EstadoHabitacion.Mantenimiento => "danger",
+                                                EstadoHabitacion.Reservada => "primary",
+                                                EstadoHabitacion.Inactiva => "secondary",
+                                                _ => "secondary"
+                                            };
+                                            var estadoText = estadoHabitacion.ToString();
+                                        }
+                                        <span class="badge bg-@estadoClass">@estadoText</span>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success fs-5">@habitacion.PrecioBase.ToString("C")</strong>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(habitacion.Descripcion))
+                                        {
+                                            <span class="text-muted" title="@habitacion.Descripcion">
+                                                @(habitacion.Descripcion.Length > 30 ? habitacion.Descripcion.Substring(0, 30) + "..." : habitacion.Descripcion)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (habitacion.Estado)
+                                        {
+                                            <span class="badge bg-success fs-6"><i class="bi bi-check-circle-fill"></i> Activa</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger fs-6"><i class="bi bi-x-circle-fill"></i> Inactiva</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <a href="@Url.Action("Details", new { id = habitacion.Id })" 
+                                               class="btn btn-info btn-lg px-3" 
+                                               title="Ver detalles">
+                                                <i class="bi bi-eye-fill"></i> Detalles
+                                            </a>
+                                            <a href="@Url.Action("Edit", new { id = habitacion.Id })" 
+                                               class="btn btn-warning btn-lg px-3" 
+                                               title="Editar">
+                                                <i class="bi bi-pencil-fill"></i> Editar
+                                            </a>
+                                            <a href="@Url.Action("Delete", new { id = habitacion.Id })" 
+                                               class="btn btn-danger btn-lg px-3" 
+                                               title="Eliminar">
+                                                <i class="bi bi-trash-fill"></i> Eliminar
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-door-open" style="font-size: 4rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3 mb-0">No hay habitaciones registradas</p>
+                    <a href="@Url.Action("Create")" class="btn btn-primary mt-3">
+                        <i class="bi bi-plus-circle"></i> Crear Primera Habitación
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        padding: 1rem !important;
+    }
+    
+    .table td {
+        padding: 1rem !important;
+        vertical-align: middle;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s;
+    }
+    
+    .card {
+        border-radius: 10px;
+    }
+    
+    .btn-lg {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    
+    .btn-lg i {
+        margin-right: 0.25rem;
+    }
+    
+    .badge {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+    }
+</style>

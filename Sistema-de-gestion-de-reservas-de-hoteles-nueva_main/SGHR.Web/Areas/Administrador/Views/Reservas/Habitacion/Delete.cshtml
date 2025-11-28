@@ -1,0 +1,96 @@
+@model SGHR.Application.DTOs.Reservas.Habitacion.HabitacionDTO
+@using SGHR.Application.DTOs.Configuration.Categoria
+@using SGHR.Application.DTOs.Configuration.Piso
+@using SGHR.Domain.Enums
+
+@{
+    ViewData["Title"] = "Eliminar Habitación";
+    var categorias = ViewBag.Categorias as List<CategoriaDTO> ?? new List<CategoriaDTO>();
+    var pisos = ViewBag.Pisos as List<PisoDTO> ?? new List<PisoDTO>();
+    var categoria = categorias.FirstOrDefault(c => c.Id == Model.IdCategoria);
+    var piso = pisos.FirstOrDefault(p => p.Id == Model.IdPiso);
+    var estadoHabitacion = (EstadoHabitacion)Model.EstadoHabitacion;
+}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg border-danger">
+                <div class="card-header bg-danger text-white py-3">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-warning" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle-fill"></i> ¿Está seguro de eliminar esta habitación?
+                        </h5>
+                        <p class="mb-0">Esta acción no se puede deshacer. La habitación será eliminada permanentemente del sistema.</p>
+                    </div>
+
+                    <div class="card border-0 bg-light mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Información de la Habitación</h5>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 text-muted">Número:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-primary fs-6">#@Model.Numero</span>
+                                </dd>
+
+                                <dt class="col-sm-4 text-muted">Categoría:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-info">@(categoria?.Nombre ?? $"Categoría {Model.IdCategoria}")</span>
+                                </dd>
+
+                                <dt class="col-sm-4 text-muted">Piso:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-secondary">Piso @(piso?.Numero ?? Model.IdPiso)</span>
+                                </dd>
+
+                                <dt class="col-sm-4 text-muted">Precio Base:</dt>
+                                <dd class="col-sm-8">
+                                    <strong class="text-success">@Model.PrecioBase.ToString("C")</strong>
+                                </dd>
+
+                                <dt class="col-sm-4 text-muted">Estado:</dt>
+                                <dd class="col-sm-8">
+                                    @if (Model.Estado)
+                                    {
+                                        <span class="badge bg-success">Activa</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactiva</span>
+                                    }
+                                </dd>
+
+                                @if (!string.IsNullOrWhiteSpace(Model.Descripcion))
+                                {
+                                    <dt class="col-sm-4 text-muted">Descripción:</dt>
+                                    <dd class="col-sm-8">@Model.Descripcion</dd>
+                                }
+                            </dl>
+                        </div>
+                    </div>
+
+                    @using (Html.BeginForm("DeleteConfirmed", "Habitacion", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        @Html.Hidden("id", Model.Id)
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-trash"></i> Sí, Eliminar
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

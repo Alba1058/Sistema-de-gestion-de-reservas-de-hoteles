@@ -8,33 +8,31 @@ using SGHR.Persistence.Interfaces.Usuarios;
 
 namespace SGHR.Application.Services.Authentication
 {
-    public class AuthenticationServices : IAuthenticationServices
+    public class AuthenticationServices : BaseService, IAuthenticationServices
     {
-        private readonly ILogger<AuthenticationServices> _logger;
         private readonly IUsuarioRepository _usuarioRepository;
 
         public AuthenticationServices(
             ILogger<AuthenticationServices> logger,
-            IUsuarioRepository usuarioRepository)
+            IUsuarioRepository usuarioRepository) : base(logger)
         {
-            _logger = logger;
             _usuarioRepository = usuarioRepository;
         }
 
         public async Task<OperationResult<UsuarioDTO>> LoginSesionAsync(string email, string password)
         {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-                return OperationResult<UsuarioDTO>.Fail("Debe proporcionar el correo y la contraseña.");
-
-            if (!ValidationHelper.IsValidEmail(email, out var msg))
-                return OperationResult<UsuarioDTO>.Fail(msg);
-
-            try
+            return await ExecuteOperationAsync<UsuarioDTO>(async () =>
             {
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                    return OperationResult<UsuarioDTO>.Fail("Debe proporcionar el correo y la contraseña.");
+
+                if (!ValidationHelper.IsValidEmail(email, out var msg))
+                    return OperationResult<UsuarioDTO>.Fail(msg);
+
                 var usuario = await _usuarioRepository.GetUsuarioByCorreoAsync(email);
 
-                if (usuario == null || usuario.IsDeleted)
-                    return OperationResult<UsuarioDTO>.Fail("Usuario no encontrado.");
+                if (!EntityValidationHelper.ValidateEntityExists(usuario, "Usuario", out msg))
+                    return OperationResult<UsuarioDTO>.Fail(msg);
 
                 if (usuario.Contrasena != password)
                     return OperationResult<UsuarioDTO>.Fail("Contraseña incorrecta.");
@@ -45,12 +43,7 @@ namespace SGHR.Application.Services.Authentication
                     usuarioDto,
                     $"Usuario {usuario.Nombre} inició sesión correctamente."
                 );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en LoginSesionAsync");
-                return OperationResult<UsuarioDTO>.Fail("Error interno al procesar la solicitud.");
-            }
+            }, "Error interno al procesar la solicitud.");
         }
     }
 }

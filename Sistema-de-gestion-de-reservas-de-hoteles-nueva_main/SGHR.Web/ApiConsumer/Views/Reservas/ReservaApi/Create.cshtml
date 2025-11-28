@@ -1,4 +1,4 @@
-@model SGHR.Application.DTOs.Reservas.Reserva.CreateReservaDTO
+@model SGHR.Web.ViewModels.Reservas.CreateReservaViewModel
 
 @{
     ViewData["Title"] = "Crear Reserva";
@@ -36,63 +36,82 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label asp-for="IdCliente" class="form-label fw-bold">ID Cliente</label>
-                                <input asp-for="IdCliente" class="form-control" type="number" />
-                                <span asp-validation-for="IdCliente" class="text-danger"></span>
+                                <label asp-for="Reserva.IdCliente" class="form-label fw-bold">Cliente</label>
+                                <select asp-for="Reserva.IdCliente" class="form-select">
+                                    <option value="">-- Seleccione un Cliente --</option>
+                                    @if (Model.Clientes != null)
+                                    {
+                                        foreach (var cliente in Model.Clientes)
+                                        {
+                                            <option value="@cliente.Id">@cliente.Nombre @cliente.Apellido - @cliente.Identificacion</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="Reserva.IdCliente" class="text-danger"></span>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label asp-for="IdHabitacion" class="form-label fw-bold">ID Habitación</label>
-                                <input asp-for="IdHabitacion" class="form-control" type="number" />
-                                <span asp-validation-for="IdHabitacion" class="text-danger"></span>
+                                <label asp-for="Reserva.IdHabitacion" class="form-label fw-bold">Habitación</label>
+                                <select asp-for="Reserva.IdHabitacion" class="form-select">
+                                    <option value="">-- Seleccione una Habitación --</option>
+                                    @if (Model.Habitaciones != null)
+                                    {
+                                        foreach (var habitacion in Model.Habitaciones)
+                                        {
+                                            <option value="@habitacion.Id">Habitación #@habitacion.Numero - Piso @habitacion.IdPiso - @habitacion.PrecioBase.ToString("C")</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="Reserva.IdHabitacion" class="text-danger"></span>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label asp-for="FechaInicio" class="form-label fw-bold">Fecha Inicio</label>
-                                <input asp-for="FechaInicio" class="form-control" type="datetime-local" 
-                                       value="@(Model.FechaInicio == default(DateTime) ? "" : Model.FechaInicio.ToString("yyyy-MM-ddTHH:mm"))" 
+                                <label asp-for="Reserva.FechaInicio" class="form-label fw-bold">Fecha Inicio</label>
+                                <input asp-for="Reserva.FechaInicio" class="form-control" type="datetime-local" 
+                                       value="@(Model.Reserva?.FechaInicio == default(DateTime) ? "" : Model.Reserva.FechaInicio.ToString("yyyy-MM-ddTHH:mm"))" 
                                        required />
-                                <span asp-validation-for="FechaInicio" class="text-danger"></span>
+                                <span asp-validation-for="Reserva.FechaInicio" class="text-danger"></span>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label asp-for="FechaFin" class="form-label fw-bold">Fecha Fin</label>
-                                <input asp-for="FechaFin" class="form-control" type="datetime-local" 
-                                       value="@(Model.FechaFin == default(DateTime) ? "" : Model.FechaFin.ToString("yyyy-MM-ddTHH:mm"))" 
+                                <label asp-for="Reserva.FechaFin" class="form-label fw-bold">Fecha Fin</label>
+                                <input asp-for="Reserva.FechaFin" class="form-control" type="datetime-local" 
+                                       value="@(Model.Reserva?.FechaFin == default(DateTime) ? "" : Model.Reserva.FechaFin.ToString("yyyy-MM-ddTHH:mm"))" 
                                        required />
-                                <span asp-validation-for="FechaFin" class="text-danger"></span>
+                                <span asp-validation-for="Reserva.FechaFin" class="text-danger"></span>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label asp-for="NumeroHuespedes" class="form-label fw-bold">Número de Huéspedes</label>
-                                <input asp-for="NumeroHuespedes" class="form-control" type="number" min="1" />
-                                <span asp-validation-for="NumeroHuespedes" class="text-danger"></span>
+                                <label asp-for="Reserva.NumeroHuespedes" class="form-label fw-bold">Número de Huéspedes</label>
+                                <input asp-for="Reserva.NumeroHuespedes" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="Reserva.NumeroHuespedes" class="text-danger"></span>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label asp-for="Total" class="form-label fw-bold">Total</label>
+                                <label asp-for="Reserva.Total" class="form-label fw-bold">Total</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input asp-for="Total" class="form-control" type="number" step="0.01" min="0" />
+                                    <input asp-for="Reserva.Total" class="form-control" type="number" step="0.01" min="0" />
                                 </div>
-                                <span asp-validation-for="Total" class="text-danger"></span>
+                                <span asp-validation-for="Reserva.Total" class="text-danger"></span>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label asp-for="EstadoReserva" class="form-label fw-bold">Estado Reserva</label>
-                                <select asp-for="EstadoReserva" class="form-select">
-                                    <option value="1">Activa</option>
-                                    <option value="2">Pendiente</option>
-                                    <option value="3">Confirmada</option>
-                                    <option value="4">Cancelada</option>
-                                    <option value="5">Finalizada</option>
-                                    <option value="6">Ausente</option>
+                                <label asp-for="Reserva.EstadoReserva" class="form-label fw-bold">Estado Reserva</label>
+                                <select asp-for="Reserva.EstadoReserva" class="form-select">
+                                    @if (Model.EstadosReserva != null)
+                                    {
+                                        foreach (var estado in Model.EstadosReserva)
+                                        {
+                                            <option value="@estado.Key">@estado.Value</option>
+                                        }
+                                    }
                                 </select>
-                                <span asp-validation-for="EstadoReserva" class="text-danger"></span>
+                                <span asp-validation-for="Reserva.EstadoReserva" class="text-danger"></span>
                             </div>
                         </div>
 

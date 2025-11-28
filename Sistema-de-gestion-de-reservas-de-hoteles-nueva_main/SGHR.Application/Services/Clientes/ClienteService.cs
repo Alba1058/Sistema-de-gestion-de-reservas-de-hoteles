@@ -9,80 +9,82 @@ using SGHR.Persistence.Interfaces.Clientes;
 
 namespace SGHR.Application.Services.Clientes
 {
-    public sealed class ClienteService : IClienteService
+    public sealed class ClienteService : BaseService, IClienteService
     {
         private readonly IClienteRepository _clienteRepository;
-        private readonly ILogger<ClienteService> _logger;
 
         public ClienteService(IClienteRepository clienteRepository, ILogger<ClienteService> logger)
+            : base(logger)
         {
             _clienteRepository = clienteRepository;
-            _logger = logger;
         }
 
         public async Task<OperationResult<List<ClienteDTO>>> GetAllAsync()
         {
-            try
-            {
-                var clientes = await _clienteRepository.GetAllAsync();
-
-                var dtoList = clientes
-                    .Where(c => !c.IsDeleted)
-                    .Select(ClienteMapper.ToClienteDto)
-                    .ToList();
-
-                return OperationResult<List<ClienteDTO>>.Ok(dtoList, "Clientes obtenidos correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error obteniendo clientes");
-                return OperationResult<List<ClienteDTO>>.Fail("Error al obtener los clientes.");
-            }
+            return await GetAllEntitiesAsync<Cliente, ClienteDTO>(
+                _clienteRepository.GetAllAsync,
+                ClienteMapper.ToClienteDto,
+                "Clientes");
         }
 
         public async Task<OperationResult<ClienteDTO>> GetByIdAsync(int id)
         {
-            try
+            return await ExecuteOperationAsync<ClienteDTO>(async () =>
             {
-                if (id <= 0)
-                    return OperationResult<ClienteDTO>.Fail("El ID del cliente no es válido.");
+                if (!ValidationHelper.IsValidId(id, "Cliente", out var msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
 
                 var entity = await _clienteRepository.GetEntityByIdAsync(id);
-                if (entity == null || entity.IsDeleted) 
-                    return OperationResult<ClienteDTO>.Fail("Cliente no encontrado.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Cliente", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
 
                 var dto = ClienteMapper.ToClienteDto(entity);
                 return OperationResult<ClienteDTO>.Ok(dto, "Cliente obtenido correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error obteniendo cliente por Id");
-                return OperationResult<ClienteDTO>.Fail("Error interno al obtener el cliente.");
-            }
+            }, "Error interno al obtener el cliente.");
         }
 
         public async Task<OperationResult<ClienteDTO>> CreateAsync(ClienteCreateDTO dto)
         {
-            try
+            return await ExecuteOperationAsync<ClienteDTO>(async () =>
             {
+                if (!ValidationHelper.NotNull(dto, "Cliente", out var msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Nombre, "Nombre", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Apellido, "Apellido", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.IsValidEmail(dto.Email, out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Telefono, "Teléfono", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Identificacion, "Identificación", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.MaxLength(dto.Direccion, 200, "Dirección", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
 
-                if (!ValidationHelper.NotNull(dto, "Cliente", out var msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.Required(dto.Nombre, "Nombre", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.Required(dto.Apellido, "Apellido", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.IsValidEmail(dto.Email, out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.Required(dto.Telefono, "Teléfono", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.Required(dto.Identificacion, "Identificación", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.MaxLength(dto.Direccion, 200, "Dirección", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
+                var (isValidEmail, emailMsg) = await UniquenessValidationHelper.ValidateUniquenessAsync<Cliente>(
+                    _clienteRepository.ExistsAsync,
+                    x => x.Email == dto.Email && !x.IsDeleted,
+                    "correo electrónico",
+                    "cliente");
+                if (!isValidEmail)
+                    return OperationResult<ClienteDTO>.Fail(emailMsg);
 
+                var (isValidTelefono, telefonoMsg) = await UniquenessValidationHelper.ValidateUniquenessAsync<Cliente>(
+                    _clienteRepository.ExistsAsync,
+                    x => x.Telefono == dto.Telefono && !x.IsDeleted,
+                    "teléfono",
+                    "cliente");
+                if (!isValidTelefono)
+                    return OperationResult<ClienteDTO>.Fail(telefonoMsg);
 
-                if (await _clienteRepository.ExistsAsync(x => x.Email == dto.Email && !x.IsDeleted))
-                    return OperationResult<ClienteDTO>.Fail("Ya existe un cliente con este correo.");
-
-                if (await _clienteRepository.ExistsAsync(x => x.Telefono == dto.Telefono && !x.IsDeleted))
-                    return OperationResult<ClienteDTO>.Fail("Ya existe un cliente con este teléfono.");
-
-                if (await _clienteRepository.ExistsAsync(x => x.Identificacion == dto.Identificacion && !x.IsDeleted))
-                    return OperationResult<ClienteDTO>.Fail("Ya existe un cliente con esta identificación.");
+                var (isValidIdentificacion, identificacionMsg) = await UniquenessValidationHelper.ValidateUniquenessAsync<Cliente>(
+                    _clienteRepository.ExistsAsync,
+                    x => x.Identificacion == dto.Identificacion && !x.IsDeleted,
+                    "identificación",
+                    "cliente");
+                if (!isValidIdentificacion)
+                    return OperationResult<ClienteDTO>.Fail(identificacionMsg);
 
                 var entity = ClienteMapper.CreateClienteEntity(dto, usuario: "sistema");
                 var saveResult = await _clienteRepository.SaveEntityAsync(entity);
@@ -92,92 +94,96 @@ namespace SGHR.Application.Services.Clientes
 
                 var createdDto = ClienteMapper.ToClienteDto(saveResult.Data!);
                 return OperationResult<ClienteDTO>.Ok(createdDto, "Cliente creado correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al crear cliente");
-                return OperationResult<ClienteDTO>.Fail("Error interno al crear el cliente.");
-            }
+            }, "Error interno al crear el cliente.");
         }
 
         public async Task<OperationResult<ClienteDTO>> UpdateAsync(ClienteUpdateDTO dto)
         {
-            try
+            return await ExecuteOperationAsync<ClienteDTO>(async () =>
             {
-                if (dto.Id <= 0) return OperationResult<ClienteDTO>.Fail("El ID no es válido.");
-                if (!ValidationHelper.NotNull(dto, "Cliente", out var msg)) return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.IsValidId(dto.Id, "Cliente", out var msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.NotNull(dto, "Cliente", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
 
                 var entity = await _clienteRepository.GetEntityByIdAsync(dto.Id);
-                if (entity == null) return OperationResult<ClienteDTO>.Fail("Cliente no encontrado.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Cliente", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
 
-                // Validaciones
-                if (!ValidationHelper.Required(dto.Nombre, "Nombre", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.Required(dto.Apellido, "Apellido", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.IsValidEmail(dto.Email, out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.Required(dto.Telefono, "Teléfono", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
-                if (!ValidationHelper.Required(dto.Identificacion, "Identificación", out msg)) return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Nombre, "Nombre", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Apellido, "Apellido", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.IsValidEmail(dto.Email, out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Telefono, "Teléfono", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
+                if (!ValidationHelper.Required(dto.Identificacion, "Identificación", out msg))
+                    return OperationResult<ClienteDTO>.Fail(msg);
 
-                // Unicidad
-                if (await _clienteRepository.ExistsAsync(x => x.Email == dto.Email && x.Id != dto.Id && !x.IsDeleted))
-                    return OperationResult<ClienteDTO>.Fail("Otro cliente ya usa este correo.");
+                var (isValidEmail, emailMsg) = await UniquenessValidationHelper.ValidateUniquenessForUpdateAsync<Cliente>(
+                    _clienteRepository.ExistsAsync,
+                    x => x.Email == dto.Email && x.Id != dto.Id && !x.IsDeleted,
+                    "correo electrónico",
+                    "cliente");
+                if (!isValidEmail)
+                    return OperationResult<ClienteDTO>.Fail(emailMsg);
 
-                if (await _clienteRepository.ExistsAsync(x => x.Telefono == dto.Telefono && x.Id != dto.Id && !x.IsDeleted))
-                    return OperationResult<ClienteDTO>.Fail("Otro cliente ya usa este teléfono.");
+                var (isValidTelefono, telefonoMsg) = await UniquenessValidationHelper.ValidateUniquenessForUpdateAsync<Cliente>(
+                    _clienteRepository.ExistsAsync,
+                    x => x.Telefono == dto.Telefono && x.Id != dto.Id && !x.IsDeleted,
+                    "teléfono",
+                    "cliente");
+                if (!isValidTelefono)
+                    return OperationResult<ClienteDTO>.Fail(telefonoMsg);
 
-                if (await _clienteRepository.ExistsAsync(x => x.Identificacion == dto.Identificacion && x.Id != dto.Id && !x.IsDeleted))
-                    return OperationResult<ClienteDTO>.Fail("Otro cliente ya usa esta identificación.");
+                var (isValidIdentificacion, identificacionMsg) = await UniquenessValidationHelper.ValidateUniquenessForUpdateAsync<Cliente>(
+                    _clienteRepository.ExistsAsync,
+                    x => x.Identificacion == dto.Identificacion && x.Id != dto.Id && !x.IsDeleted,
+                    "identificación",
+                    "cliente");
+                if (!isValidIdentificacion)
+                    return OperationResult<ClienteDTO>.Fail(identificacionMsg);
 
-                ClienteMapper.UpdateClienteFromDto(entity, dto, usuario: "sistema");
-                var updateOp = await _clienteRepository.UpdateEntityAsync(entity);
+                ClienteMapper.UpdateClienteFromDto(entity!, dto, usuario: "sistema");
+                var updateOp = await _clienteRepository.UpdateEntityAsync(entity!);
 
                 if (!updateOp.Success)
                     return OperationResult<ClienteDTO>.Fail(updateOp.Message);
 
                 var dtoResult = ClienteMapper.ToClienteDto(updateOp.Data!);
                 return OperationResult<ClienteDTO>.Ok(dtoResult, "Cliente actualizado correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al actualizar cliente");
-                return OperationResult<ClienteDTO>.Fail("Error interno al actualizar el cliente.");
-            }
+            }, "Error interno al actualizar el cliente.");
         }
 
         public async Task<OperationResult<bool>> RemoveAsync(ClienteDeleteDTO dto)
         {
-            try
+            return await ExecuteOperationAsync(async () =>
             {
-                if (dto.Id <= 0) return OperationResult<bool>.Fail("El ID no es válido.");
+                if (!ValidationHelper.IsValidId(dto.Id, "Cliente", out var msg))
+                    return OperationResult<bool>.Fail(msg);
 
                 var entity = await _clienteRepository.GetEntityByIdAsync(dto.Id);
-                if (entity == null) return OperationResult<bool>.Fail("Cliente no encontrado.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Cliente", out msg))
+                    return OperationResult<bool>.Fail(msg);
 
-                var delOp = await _clienteRepository.DeleteEntityAsync(entity);
-                if (!delOp.Success) return OperationResult<bool>.Fail(delOp.Message);
+                var delOp = await _clienteRepository.DeleteEntityAsync(entity!);
+                if (!delOp.Success)
+                    return OperationResult<bool>.Fail(delOp.Message);
 
                 return OperationResult<bool>.Ok(true, "Cliente eliminado correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al eliminar cliente");
-                return OperationResult<bool>.Fail("Error interno al eliminar el cliente.");
-            }
+            }, "Error interno al eliminar el cliente.");
         }
 
         public async Task<OperationResult<List<ClienteDTO>>> GetClientesConReservasAsync()
         {
-            try
+            return await ExecuteOperationAsync<List<ClienteDTO>>(async () =>
             {
                 var clientes = await _clienteRepository.GetClientesConReservasAsync();
                 var dtoList = clientes.Select(ClienteMapper.ToClienteDto).ToList();
 
                 return OperationResult<List<ClienteDTO>>.Ok(dtoList, "Clientes con reservas obtenidos correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error obteniendo clientes con reservas");
-                return OperationResult<List<ClienteDTO>>.Fail("Error al obtener los clientes con reservas.");
-            }
+            }, "Error al obtener los clientes con reservas.");
         }
     }
 }

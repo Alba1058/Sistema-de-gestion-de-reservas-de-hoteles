@@ -9,6 +9,8 @@ using SGHR.Domain.Enums;
 using SGHR.Persistence.Context;
 using SGHR.Persistence.Repositories.Reservas;
 using SGHR.Persistence.Interfaces.Reservas;
+using SGHR.Persistence.Interfaces.Clientes;
+using SGHR.Persistence.Repositories.Clientes;
 
 namespace SGHR.Application.Test2.Reservas
 {
@@ -17,6 +19,8 @@ namespace SGHR.Application.Test2.Reservas
         private readonly SGHRContext _contexto;
         private readonly IReservaRepository _repositorio;
         private readonly IReservaServicioRepository _repoReservaServicio;
+        private readonly IClienteRepository _repoCliente;
+        private readonly IHabitacionRepository _repoHabitacion;
         private readonly ReservaService _servicio;
         private readonly ILoggerFactory _loggerFactory;
 
@@ -36,11 +40,15 @@ namespace SGHR.Application.Test2.Reservas
             var loggerReservaRepo = _loggerFactory.CreateLogger<ReservaRepository>();
             var loggerService = _loggerFactory.CreateLogger<ReservaService>();
             var loggerReservaServicio = _loggerFactory.CreateLogger<ReservaServicioRepository>();
+            var loggerClienteRepo = _loggerFactory.CreateLogger<ClienteRepository>();
+            var loggerHabitacionRepo = _loggerFactory.CreateLogger<HabitacionRepository>();
 
             _repositorio = new ReservaRepository(_contexto, loggerReservaRepo);
             _repoReservaServicio = new ReservaServicioRepository(_contexto, loggerReservaServicio);
+            _repoCliente = new ClienteRepository(_contexto, loggerClienteRepo);
+            _repoHabitacion = new HabitacionRepository(_contexto, loggerHabitacionRepo);
 
-            _servicio = new ReservaService(_repositorio, _repoReservaServicio, loggerService);
+            _servicio = new ReservaService(_repositorio, _repoReservaServicio, _repoCliente, _repoHabitacion, loggerService);
 
             clienteSeed = new Cliente
             {
@@ -226,7 +234,7 @@ namespace SGHR.Application.Test2.Reservas
             var resultado = await _servicio.GetByIdAsync(crear.Data.Id);
 
             Assert.False(resultado.Success);
-            Assert.Equal("Reserva no encontrada.", resultado.Message);
+            Assert.Equal("Reserva no encontrado.", resultado.Message);
         }
 
         [Fact]

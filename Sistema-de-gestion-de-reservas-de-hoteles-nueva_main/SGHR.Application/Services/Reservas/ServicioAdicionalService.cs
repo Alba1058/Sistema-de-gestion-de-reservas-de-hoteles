@@ -115,14 +115,10 @@ namespace SGHR.Application.Services.Reservas
 
         public async Task<OperationResult<List<ServicioAdicionalDTO>>> GetAllAsync()
         {
-            return await ExecuteOperationAsync(async () =>
-            {
-                var list = await _repository.GetAllAsync();
-                var dtoList = list.Where(s => !s.IsDeleted)
-                           .Select(ServicioAdicionalMapper.ToServicioAdicionalDto).ToList();
-                return OperationResult<List<ServicioAdicionalDTO>>.Ok(dtoList);
-            },
-            "Error al obtener los servicios adicionales.");
+            return await GetAllEntitiesAsync<ServicioAdicional, ServicioAdicionalDTO>(
+                _repository.GetAllAsync,
+                ServicioAdicionalMapper.ToServicioAdicionalDto,
+                "Servicios Adicionales");
         }
 
         public async Task<OperationResult<List<ServicioAdicionalDTO>>> GetServiciosDisponiblesAsync()

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SGHR.Application.DTOs.Reservas.Habitacion;
+using SGHR.Application.DTOs.Configuration.Categoria;
+using SGHR.Application.DTOs.Configuration.Piso;
 using SGHR.Application.Interfaces.Reservas;
 using SGHR.Application.Interfaces.Configuration;
 
@@ -29,11 +31,17 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Reservas
 
             if (!result.Success)
             {
-                ViewBag.ErrorMessage = result.Message;
-                return View();
+                TempData["Error"] = result.Message;
+                return View(new List<HabitacionDTO>());
             }
 
-            return View(result.Data);
+            var categoriasResult = await _categoriaService.GetAllAsync();
+            var pisosResult = await _pisoService.GetAllAsync();
+
+            ViewBag.Categorias = categoriasResult.Data ?? new List<SGHR.Application.DTOs.Configuration.Categoria.CategoriaDTO>();
+            ViewBag.Pisos = pisosResult.Data ?? new List<SGHR.Application.DTOs.Configuration.Piso.PisoDTO>();
+
+            return View(result.Data ?? new List<HabitacionDTO>());
         }
 
         // GET: Habitacion/Details
@@ -43,9 +51,15 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Reservas
 
             if (!result.Success)
             {
-                ViewBag.ErrorMessage = result.Message;
-                return View();
+                TempData["Error"] = result.Message;
+                return RedirectToAction(nameof(Index));
             }
+
+            var categoriasResult = await _categoriaService.GetAllAsync();
+            var pisosResult = await _pisoService.GetAllAsync();
+
+            ViewBag.Categorias = categoriasResult.Data ?? new List<SGHR.Application.DTOs.Configuration.Categoria.CategoriaDTO>();
+            ViewBag.Pisos = pisosResult.Data ?? new List<SGHR.Application.DTOs.Configuration.Piso.PisoDTO>();
 
             return View(result.Data);
         }
@@ -77,6 +91,7 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Reservas
                 return View(dto);
             }
 
+            TempData["Success"] = "Habitación creada exitosamente.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -129,6 +144,7 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Reservas
                 return View(dto);
             }
 
+            TempData["Success"] = "Habitación actualizada exitosamente.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -139,9 +155,15 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Reservas
 
             if (!result.Success)
             {
-                ViewBag.ErrorMessage = result.Message;
-                return View();
+                TempData["Error"] = result.Message;
+                return RedirectToAction(nameof(Index));
             }
+
+            var categoriasResult = await _categoriaService.GetAllAsync();
+            var pisosResult = await _pisoService.GetAllAsync();
+
+            ViewBag.Categorias = categoriasResult.Data ?? new List<SGHR.Application.DTOs.Configuration.Categoria.CategoriaDTO>();
+            ViewBag.Pisos = pisosResult.Data ?? new List<SGHR.Application.DTOs.Configuration.Piso.PisoDTO>();
 
             return View(result.Data);
         }
@@ -157,10 +179,11 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Reservas
 
             if (!result.Success)
             {
-                ViewBag.ErrorMessage = result.Message;
-                return View("Delete");
+                TempData["Error"] = result.Message;
+                return RedirectToAction(nameof(Index));
             }
 
+            TempData["Success"] = "Habitación eliminada exitosamente.";
             return RedirectToAction(nameof(Index));
         }
 

@@ -20,27 +20,30 @@ namespace SGHR.Application.Mappers.Configuration
             };
         }
 
-        public static Categoria CreateCategoriaEntity(CreateCategoriaDTO dto)
+        public static Categoria CreateCategoriaEntity(CreateCategoriaDTO dto, string? usuario = null)
         {
             ArgumentNullException.ThrowIfNull(dto);
 
-            return new Categoria
+            var entity = new Categoria
             {
                 Nombre = MapperHelper.Clean(dto.Nombre),
                 Descripcion = MapperHelper.Clean(dto.Descripcion),
-                IsDeleted = false,
-                FechaCreacion = DateTime.UtcNow
+                IsDeleted = false
             };
+
+            MapperHelper.SetCreationFields(entity, usuario);
+            return entity;
         }
 
-        public static void UpdateCategoriaFromDto(Categoria entity, UpdateCategoriaDTO dto)
+        public static void UpdateCategoriaFromDto(Categoria entity, UpdateCategoriaDTO dto, string? usuario = null)
         {
             if (entity == null || dto == null) return;
 
             entity.Nombre = dto.Nombre?.Trim() ?? entity.Nombre;
             entity.Descripcion = dto.Descripcion?.Trim() ?? entity.Descripcion;
             entity.IsDeleted = !dto.Estado;
-            entity.FechaModificacion = DateTime.UtcNow;
+
+            MapperHelper.SetAuditFields(entity, usuario);
         }
     }
 }

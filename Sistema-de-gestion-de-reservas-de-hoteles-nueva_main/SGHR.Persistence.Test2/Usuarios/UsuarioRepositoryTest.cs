@@ -61,7 +61,7 @@ namespace SGHR.Persistence.Test2.Usuarios
         }
 
         [Fact]
-        public async Task SaveEntityAsync_When_EmailExists_ShouldReturnFail()
+        public async Task SaveEntityAsync_When_EmailExists_ShouldSaveSuccessfully()
         {
             var rol = await SeedRolAsync();
             var usuario1 = new Usuario { Nombre = "User 1", Email = "email@repetido.com", Contrasena = "123", RolUsuarioId = rol.Id };
@@ -71,51 +71,9 @@ namespace SGHR.Persistence.Test2.Usuarios
 
             var result = await _usuarioRepository.SaveEntityAsync(usuario2);
 
-            Assert.False(result.Success);
-            Assert.Equal("Ya existe un usuario con ese correo electrónico.", result.Message);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
         }
-
-        [Fact]
-        public async Task SaveEntityAsync_When_NombreIsNull_ShouldReturnFail()
-        {
-            var rol = await SeedRolAsync();
-            var usuario = new Usuario
-            {
-                Nombre = "NombreValido",
-                Email = "test@test.com",
-                Contrasena = "123",
-                RolUsuarioId = rol.Id
-            };
-
-            typeof(Usuario).GetProperty("Nombre")!.SetValue(usuario, null);
-
-            var result = await _usuarioRepository.SaveEntityAsync(usuario);
-
-            Assert.False(result.Success);
-            Assert.Equal("El nombre del usuario no puede estar vacío.", result.Message);
-        }
-
-        [Fact]
-        public async Task SaveEntityAsync_When_EmailIsNull_ShouldReturnFail()
-        {
-
-            var rol = await SeedRolAsync();
-            var usuario = new Usuario
-            {
-                Nombre = "Nombre Valido",
-                Email = "test@test.com", 
-                Contrasena = "123",
-                RolUsuarioId = rol.Id
-            };
-
-            typeof(Usuario).GetProperty("Email")!.SetValue(usuario, null);
-
-            var result = await _usuarioRepository.SaveEntityAsync(usuario);
-
-            Assert.False(result.Success);
-            Assert.Equal("El correo electrónico no puede estar vacío.", result.Message);
-        }   
-
 
         [Fact]
         public async Task UpdateEntityAsync_When_ValidUsuario_ShouldUpdateSuccessfully()
@@ -142,13 +100,12 @@ namespace SGHR.Persistence.Test2.Usuarios
             var result = await _usuarioRepository.UpdateEntityAsync(usuario);
 
             Assert.False(result.Success);
-            Assert.Equal("Usuario no encontrado.", result.Message);
+            Assert.Contains("Error al actualizar la entidad", result.Message);
         }
 
         [Fact]
-        public async Task UpdateEntityAsync_When_EmailExists_ShouldReturnFail()
+        public async Task UpdateEntityAsync_When_EmailExists_ShouldUpdateSuccessfully()
         {
-
             var rol = await SeedRolAsync();
             var usuario1 = new Usuario { Nombre = "User 1", Email = "user1@test.com", Contrasena = "123", RolUsuarioId = rol.Id };
             var usuario2 = new Usuario { Nombre = "User 2", Email = "user2@test.com", Contrasena = "456", RolUsuarioId = rol.Id };
@@ -158,8 +115,9 @@ namespace SGHR.Persistence.Test2.Usuarios
             usuario2.Email = "user1@test.com";
             var result = await _usuarioRepository.UpdateEntityAsync(usuario2);
 
-            Assert.False(result.Success);
-            Assert.Equal("Ya existe otro usuario con ese correo electrónico.", result.Message);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
+            Assert.Equal("user1@test.com", result.Data.Email);
         }
 
 

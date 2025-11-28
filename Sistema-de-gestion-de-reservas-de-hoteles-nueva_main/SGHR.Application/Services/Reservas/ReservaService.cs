@@ -5,6 +5,7 @@ using SGHR.Application.Interfaces.Reservas;
 using SGHR.Application.Mappers.Reservas;
 using SGHR.Domain.Base;
 using SGHR.Domain.Entities.Reservas;
+using SGHR.Persistence.Interfaces.Clientes;
 using SGHR.Persistence.Interfaces.Reservas;
 
 namespace SGHR.Application.Services.Reservas
@@ -13,16 +14,20 @@ namespace SGHR.Application.Services.Reservas
     {
         private readonly IReservaRepository _reservaRepository;
         private readonly IReservaServicioRepository _reservaServicioRepository;
-        private readonly ILogger<ReservaService> _logger;
+        private readonly IClienteRepository _clienteRepository;
+        private readonly IHabitacionRepository _habitacionRepository;
 
         public ReservaService(
             IReservaRepository reservaRepository,
             IReservaServicioRepository reservaServicioRepository,
+            IClienteRepository clienteRepository,
+            IHabitacionRepository habitacionRepository,
             ILogger<ReservaService> logger) : base(logger)
         {
             _reservaRepository = reservaRepository;
             _reservaServicioRepository = reservaServicioRepository;
-            _logger = logger;
+            _clienteRepository = clienteRepository;
+            _habitacionRepository = habitacionRepository;
         }
 
         public async Task<OperationResult<ReservaDTO>> CreateAsync(CreateReservaDTO dto)
@@ -43,6 +48,14 @@ namespace SGHR.Application.Services.Reservas
                 if (dto.NumeroHuespedes <= 0)
                     return OperationResult<ReservaDTO>.Fail("Debe indicar el número de huéspedes.");
 
+                var cliente = await _clienteRepository.GetEntityByIdAsync(dto.IdCliente);
+                if (!EntityValidationHelper.ValidateRelatedEntity(cliente, "cliente", out msg))
+                    return OperationResult<ReservaDTO>.Fail(msg);
+
+                var habitacion = await _habitacionRepository.GetEntityByIdAsync(dto.IdHabitacion);
+                if (!EntityValidationHelper.ValidateRelatedEntity(habitacion, "habitación", out msg))
+                    return OperationResult<ReservaDTO>.Fail(msg);
+
                 var reservasOp = await _reservaRepository.GetReservasPorFechaAsync(dto.FechaInicio, dto.FechaFin);
                 if (reservasOp.Success && reservasOp.Data != null &&
                     reservasOp.Data.Any(r => r.IdHabitacion == dto.IdHabitacion &&
@@ -52,8 +65,6 @@ namespace SGHR.Application.Services.Reservas
                 }
 
                 var entity = ReservaMapper.CreateReservaEntity(dto);
-                entity.FechaCreacion = DateTime.UtcNow;
-                entity.IsDeleted = false;
 
                 var saveOp = await _reservaRepository.SaveEntityAsync(entity);
                 if (!saveOp.Success)
@@ -76,8 +87,22 @@ namespace SGHR.Application.Services.Reservas
                     return OperationResult<ReservaDTO>.Fail("La fecha de inicio debe ser anterior a la fecha de fin.");
 
                 var entity = await _reservaRepository.GetEntityByIdAsync(dto.Id);
-                if (entity == null)
-                    return OperationResult<ReservaDTO>.Fail("Reserva no encontrada.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Reserva", out msg))
+                    return OperationResult<ReservaDTO>.Fail(msg);
+
+                if (dto.IdCliente > 0)
+                {
+                    var cliente = await _clienteRepository.GetEntityByIdAsync(dto.IdCliente);
+                    if (!EntityValidationHelper.ValidateRelatedEntity(cliente, "cliente", out msg))
+                        return OperationResult<ReservaDTO>.Fail(msg);
+                }
+
+                if (dto.IdHabitacion > 0)
+                {
+                    var habitacion = await _habitacionRepository.GetEntityByIdAsync(dto.IdHabitacion);
+                    if (!EntityValidationHelper.ValidateRelatedEntity(habitacion, "habitación", out msg))
+                        return OperationResult<ReservaDTO>.Fail(msg);
+                }
 
                 var reservasOp = await _reservaRepository.GetReservasPorFechaAsync(dto.FechaInicio, dto.FechaFin);
                 if (reservasOp.Success && reservasOp.Data != null &&
@@ -89,7 +114,6 @@ namespace SGHR.Application.Services.Reservas
                 }
 
                 ReservaMapper.UpdateReservaFromDto(entity, dto);
-                entity.FechaModificacion = DateTime.UtcNow;
 
                 var upOp = await _reservaRepository.UpdateEntityAsync(entity);
                 if (!upOp.Success)
@@ -108,13 +132,10 @@ namespace SGHR.Application.Services.Reservas
                     return OperationResult<bool>.Fail("El ID de la reserva es inválido.");
 
                 var entity = await _reservaRepository.GetEntityByIdAsync(dto.Id);
-                if (entity == null)
-                    return OperationResult<bool>.Fail("Reserva no encontrada.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Reserva", out var msg))
+                    return OperationResult<bool>.Fail(msg);
 
-                entity.IsDeleted = true;
-                entity.FechaModificacion = DateTime.UtcNow;
-
-                var delOp = await _reservaRepository.UpdateEntityAsync(entity);
+                var delOp = await _reservaRepository.DeleteEntityAsync(entity);
                 if (!delOp.Success)
                     return OperationResult<bool>.Fail(delOp.Message);
 
@@ -130,8 +151,8 @@ namespace SGHR.Application.Services.Reservas
                     return OperationResult<ReservaDTO>.Fail("El ID es inválido.");
 
                 var entity = await _reservaRepository.GetEntityByIdAsync(id);
-                if (entity == null || entity.IsDeleted)
-                    return OperationResult<ReservaDTO>.Fail("Reserva no encontrada.");
+                if (!EntityValidationHelper.ValidateEntityExists(entity, "Reserva", out var msg))
+                    return OperationResult<ReservaDTO>.Fail(msg);
 
                 return OperationResult<ReservaDTO>.Ok(ReservaMapper.ToReservaDto(entity));
             }, "Error interno al obtener reserva por ID.");
@@ -139,20 +160,10 @@ namespace SGHR.Application.Services.Reservas
 
         public async Task<OperationResult<List<ReservaDTO>>> GetAllAsync()
         {
-            return await ExecuteOperationAsync<List<ReservaDTO>>(async () =>
-            {
-                var reservas = await _reservaRepository.GetAllAsync();
-
-                if (reservas == null || !reservas.Any())
-                    return OperationResult<List<ReservaDTO>>.Fail("No se encontraron reservas registradas.");
-
-                var activas = reservas.Where(r => !r.IsDeleted).ToList();
-
-                var dtos = activas.Select(ReservaMapper.ToReservaDto).ToList();
-
-                return OperationResult<List<ReservaDTO>>.Ok(dtos, "Reservas obtenidas correctamente.");
-            },
-            "Error interno al obtener todas las reservas.");
+            return await GetAllEntitiesAsync<Reserva, ReservaDTO>(
+                _reservaRepository.GetAllAsync,
+                ReservaMapper.ToReservaDto,
+                "Reservas");
         }
 
         public async Task<OperationResult<List<ReservaDTO>>> GetReservasPorFechaAsync(DateTime inicio, DateTime fin)
@@ -194,9 +205,13 @@ namespace SGHR.Application.Services.Reservas
                 if (reservaId <= 0)
                     return OperationResult<bool>.Fail("El ID de la reserva es inválido.");
 
-                var cancelOp = await _reservaRepository.CancelarReservaAsync(reservaId);
-                if (!cancelOp.Success)
-                    return OperationResult<bool>.Fail(cancelOp.Message);
+                var reserva = await _reservaRepository.GetEntityByIdAsync(reservaId);
+                if (!EntityValidationHelper.ValidateEntityExists(reserva, "Reserva", out var msg))
+                    return OperationResult<bool>.Fail(msg);
+
+                var deleteOp = await _reservaRepository.DeleteEntityAsync(reserva);
+                if (!deleteOp.Success)
+                    return OperationResult<bool>.Fail(deleteOp.Message);
 
                 return OperationResult<bool>.Ok(true, "Reserva cancelada correctamente.");
             }, "Error interno al cancelar reserva.");

@@ -21,11 +21,11 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Clientes
 
             if (!result.Success)
             {
-                ViewBag.ErrorMessage = result.Message;
-                return View();
+                TempData["Error"] = result.Message;
+                return View(new List<ClienteDTO>());
             }
 
-            return View(result.Data);
+            return View(result.Data ?? new List<ClienteDTO>());
         }
 
         // GET: Clientes/Details/5
@@ -64,6 +64,7 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Clientes
                 return View(dto);
             }
 
+            TempData["Success"] = "Cliente creado exitosamente.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -80,7 +81,6 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Clientes
 
             var cliente = result.Data;
 
-            // Armando el DTO de actualización
             var updateDto = new ClienteUpdateDTO
             {
                 Id = cliente.Id,
@@ -111,6 +111,7 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Clientes
                 return View(dto);
             }
 
+            TempData["Success"] = "Cliente actualizado exitosamente.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -139,10 +140,11 @@ namespace SGHR.Web.Areas.Administrador.Controllers.Clientes
 
             if (!result.Success)
             {
-                ViewBag.ErrorMessage = result.Message;
-                return View("Delete");
+                TempData["Error"] = result.Message;
+                return RedirectToAction(nameof(Index));
             }
 
+            TempData["Success"] = "Cliente eliminado exitosamente.";
             return RedirectToAction(nameof(Index));
         }
     }

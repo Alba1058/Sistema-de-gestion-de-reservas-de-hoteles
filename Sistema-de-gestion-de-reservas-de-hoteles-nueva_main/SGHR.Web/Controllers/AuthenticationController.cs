@@ -46,7 +46,6 @@ namespace SGHR.Web.Controllers
                 return View();
             }
 
-            //  Guardar datos de usuario en sesión 
             var usuario = result.Data as UsuarioDTO;
 
             HttpContext.Session.SetInt32("UserId", usuario.Id);
@@ -54,7 +53,6 @@ namespace SGHR.Web.Controllers
             HttpContext.Session.SetString("UserRole", usuario.RolNombre);
 
             TempData["Success"] = result.Message;
-            // Redirigir según el rol
             switch (usuario.RolNombre)
             {
                 case "Recepcionista":

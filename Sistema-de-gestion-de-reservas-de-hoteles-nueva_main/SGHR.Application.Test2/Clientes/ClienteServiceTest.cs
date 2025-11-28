@@ -93,7 +93,7 @@ namespace SGHR.Application.Test2.Clientes
             var result = await _clienteService.CreateAsync(dto);
 
             Assert.False(result.Success);
-            Assert.Equal("Ya existe un cliente con este correo.", result.Message);
+            Assert.Equal("Ya existe un cliente con este correo electrónico.", result.Message);
         }
 
         [Fact]
@@ -111,7 +111,7 @@ namespace SGHR.Application.Test2.Clientes
             var result = await _clienteService.CreateAsync(dto);
 
             Assert.False(result.Success);
-            Assert.Equal("Ya existe un cliente con esta identificación.", result.Message);
+            Assert.Equal("Ya existe un cliente con este identificación.", result.Message);
         }
 
         [Fact]

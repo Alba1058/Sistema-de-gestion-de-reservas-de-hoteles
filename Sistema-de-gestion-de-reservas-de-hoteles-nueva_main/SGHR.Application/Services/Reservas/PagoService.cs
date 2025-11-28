@@ -89,13 +89,10 @@ namespace SGHR.Application.Services.Reservas
 
         public async Task<OperationResult<List<PagoDTO>>> GetAllAsync()
         {
-            return await ExecuteOperationAsync<List<PagoDTO>>(async () =>
-            {
-                var list = await _pagoRepository.GetAllAsync();
-                var dtos = list?.Select(PagoMapper.ToPagoDto).ToList() ?? new List<PagoDTO>();
-                return OperationResult<List<PagoDTO>>.Ok(dtos, "Pagos obtenidos correctamente.");
-
-            }, "Error interno al obtener todos los pagos.");
+            return await GetAllEntitiesAsync<Pago, PagoDTO>(
+                _pagoRepository.GetAllAsync,
+                PagoMapper.ToPagoDto,
+                "Pagos");
         }
 
         public async Task<OperationResult<PagoDTO>> GetByIdAsync(int id)

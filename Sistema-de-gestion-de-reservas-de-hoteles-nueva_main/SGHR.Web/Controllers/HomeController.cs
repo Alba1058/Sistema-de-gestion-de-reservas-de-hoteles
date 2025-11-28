@@ -15,7 +15,13 @@ namespace SGHR.Web.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Login", "Authentication");
+        }
+
+        public IActionResult Api()
+        {
+            var apiUrl = "http://localhost:5066/swagger";
+            return Redirect(apiUrl);
         }
 
         public IActionResult Privacy()
@@ -24,9 +30,19 @@ namespace SGHR.Web.Controllers
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public IActionResult Error(string? message = null)
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            var viewModel = new ErrorViewModel 
+            { 
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier 
+            };
+            
+            if (!string.IsNullOrEmpty(message))
+            {
+                ViewBag.ErrorMessage = message;
+            }
+            
+            return View(viewModel);
         }
     }
 }

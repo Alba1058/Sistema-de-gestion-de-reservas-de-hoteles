@@ -1,16 +1,77 @@
 ﻿@model SGHR.Application.DTOs.Reservas.Habitacion.UpdateHabitacionDTO
 
 @{
-    ViewBag.Title = "Editar Habitación";
+    ViewData["Title"] = "Editar Habitación";
 }
 
-<h2>Editar Habitación</h2>
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil"></i> Editar Habitación #@Model.Numero
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i> @ViewBag.ErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
 
-@using (Html.BeginForm())
-{
-    @Html.HiddenFor(m => m.Id)
-    @Html.Partial("_FormularioHabitacion", Model)
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-warning">
+                            <strong><i class="bi bi-exclamation-triangle"></i> Errores de validación:</strong>
+                            <ul class="mb-0">
+                                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                {
+                                    <li>@error.ErrorMessage</li>
+                                }
+                            </ul>
+                        </div>
+                    }
 
-    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-    <a href="@Url.Action("Index")" class="btn btn-secondary">Volver</a>
+                    @using (Html.BeginForm("Edit", "Habitacion", FormMethod.Post, new { @class = "needs-validation", novalidate = "novalidate" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        @Html.HiddenFor(m => m.Id)
+                        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+                        @Html.Partial("_FormularioHabitacion", Model)
+
+                        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="bi bi-check-circle"></i> Actualizar Habitación
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function() {
+            'use strict';
+            var forms = document.querySelectorAll('.needs-validation');
+            Array.prototype.slice.call(forms).forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
 }

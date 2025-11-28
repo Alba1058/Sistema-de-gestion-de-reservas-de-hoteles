@@ -1,42 +1,252 @@
 ﻿@model List<SGHR.Application.DTOs.Reservas.Reserva.ReservaDTO>
+@using SGHR.Application.DTOs.Clientes.Cliente
+@using SGHR.Application.DTOs.Reservas.Habitacion
 
 @{
-    ViewData["Title"] = "Reservas";
+    ViewData["Title"] = "Gestión de Reservas";
+    var clientes = ViewBag.Clientes as List<ClienteDTO> ?? new List<ClienteDTO>();
+    var habitaciones = ViewBag.Habitaciones as List<HabitacionDTO> ?? new List<HabitacionDTO>();
 }
 
-<h2 class="mt-3">Listado de Reservas</h2>
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="dashboard-title mb-1">
+                <i class="bi bi-calendar-check"></i> Gestión de Reservas
+            </h2>
+            <p class="text-muted mb-0">Administra las reservas del hotel</p>
+        </div>
+        <a href="@Url.Action("Create")" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Nueva Reserva
+        </a>
+    </div>
 
-<a asp-action="Create" class="btn btn-primary mb-3">Nueva Reserva</a>
+    <!-- Alertas -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>Habitación</th>
-            <th>Fecha Inicio</th>
-            <th>Fecha Fin</th>
-            <th>Total</th>
-            <th>Estado Reserva</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var r in Model)
-        {
-            <tr>
-                <td>@r.Id</td>
-                <td>@r.IdCliente</td>
-                <td>@r.IdHabitacion</td>
-                <td>@r.FechaInicio.ToShortDateString()</td>
-                <td>@r.FechaFin.ToShortDateString()</td>
-                <td>@r.Total</td>
-                <td>@r.EstadoReserva</td>
-                <td>
-                    <a asp-action="Edit" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
-                    <a asp-action="Delete" asp-route-id="@r.Id" class="btn btn-danger btn-sm">Borrar</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <!-- Tarjetas de resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Total Reservas</small>
+                            <h3 class="mb-0">@Model.Count</h3>
+                        </div>
+                        <div class="text-primary" style="font-size: 2.5rem;">
+                            <i class="bi bi-calendar-event"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Total Ingresos</small>
+                            <h3 class="mb-0 text-success">
+                                @(Model.Any() ? Model.Sum(r => r.Total).ToString("C") : "$0.00")
+                            </h3>
+                        </div>
+                        <div class="text-success" style="font-size: 2.5rem;">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Reservas Activas</small>
+                            <h3 class="mb-0 text-info">@Model.Count(r => r.Estado)</h3>
+                        </div>
+                        <div class="text-info" style="font-size: 2.5rem;">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Promedio por Reserva</small>
+                            <h3 class="mb-0 text-warning">
+                                @(Model.Any() ? Model.Average(r => r.Total).ToString("C") : "$0.00")
+                            </h3>
+                        </div>
+                        <div class="text-warning" style="font-size: 2.5rem;">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de reservas -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="bi bi-hash"></i> ID</th>
+                                <th><i class="bi bi-person"></i> Cliente</th>
+                                <th><i class="bi bi-bed"></i> Habitación</th>
+                                <th><i class="bi bi-calendar"></i> Fecha Inicio</th>
+                                <th><i class="bi bi-calendar-check"></i> Fecha Fin</th>
+                                <th><i class="bi bi-people"></i> Huéspedes</th>
+                                <th><i class="bi bi-currency-dollar"></i> Total</th>
+                                <th><i class="bi bi-info-circle"></i> Estado</th>
+                                <th class="text-center" style="min-width: 300px;"><i class="bi bi-gear"></i> Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var reserva in Model)
+                            {
+                                var cliente = clientes.FirstOrDefault(c => c.Id == reserva.IdCliente);
+                                var habitacion = habitaciones.FirstOrDefault(h => h.Id == reserva.IdHabitacion);
+                                
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">#@reserva.Id</span>
+                                    </td>
+                                    <td>
+                                        @if (cliente != null)
+                                        {
+                                            <div>
+                                                <strong>@cliente.Nombre @cliente.Apellido</strong>
+                                                <br>
+                                                <small class="text-muted">@cliente.Email</small>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Cliente #@reserva.IdCliente</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (habitacion != null)
+                                        {
+                                            <span class="badge bg-info">Habitación #@habitacion.Numero</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Habitación #@reserva.IdHabitacion</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-calendar"></i> @reserva.FechaInicio.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-calendar-check"></i> @reserva.FechaFin.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">@reserva.NumeroHuespedes</span>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success">@reserva.Total.ToString("C")</strong>
+                                    </td>
+                                    <td>
+                                        @if (reserva.Estado)
+                                        {
+                                            <span class="badge bg-success">Activa</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Inactiva</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <a href="@Url.Action("Edit", new { id = reserva.Id })" 
+                                               class="btn btn-warning btn-lg px-3" 
+                                               title="Editar">
+                                                <i class="bi bi-pencil-fill"></i> Editar
+                                            </a>
+                                            <a href="@Url.Action("Delete", new { id = reserva.Id })" 
+                                               class="btn btn-danger btn-lg px-3" 
+                                               title="Eliminar">
+                                                <i class="bi bi-trash-fill"></i> Eliminar
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-x" style="font-size: 4rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3 mb-0">No hay reservas registradas</p>
+                    <a href="@Url.Action("Create")" class="btn btn-primary mt-3">
+                        <i class="bi bi-plus-circle"></i> Crear Primera Reserva
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        padding: 1rem !important;
+    }
+    
+    .table td {
+        padding: 1rem !important;
+        vertical-align: middle;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s;
+    }
+    
+    .card {
+        border-radius: 10px;
+    }
+    
+    .btn-lg {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    
+    .btn-lg i {
+        margin-right: 0.25rem;
+    }
+</style>

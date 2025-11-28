@@ -1,109 +1,63 @@
 using Microsoft.AspNetCore.Mvc;
 using SGHR.Application.DTOs.Configuration.RolUsuario;
 using SGHR.Domain.Base;
-using System.Text;
-using System.Text.Json;
+using SGHR.Web.Infrastructure.Services.Api.Interfaces;
+using SGHR.Web.Helpers;
 
 namespace SGHR.Web.ApiConsumer.Controllers.Configuration
 {
     public class RolUsuarioApiController : Controller
     {
         private readonly ILogger<RolUsuarioApiController> _logger;
-        private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        private readonly IRolUsuarioApiService _rolUsuarioApiService;
 
-        private const string BaseApiAddress = "http://localhost:5066/api/";
-
-        public RolUsuarioApiController(ILogger<RolUsuarioApiController> logger)
+        public RolUsuarioApiController(
+            IRolUsuarioApiService rolUsuarioApiService,
+            ILogger<RolUsuarioApiController> logger)
         {
-            _logger = logger;
+            _rolUsuarioApiService = rolUsuarioApiService ?? throw new ArgumentNullException(nameof(rolUsuarioApiService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IActionResult> Index()
         {
-            var roles = await GetRolesAsync();
+            var result = await _rolUsuarioApiService.GetAllAsync();
+            var roles = result?.Data ?? new List<RolUsuarioDTO>();
             return View(roles);
         }
 
         public async Task<IActionResult> _List()
         {
-            OperationResult<List<RolUsuarioDTO>> result = null;
-            try
-            {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-                    var endpoint = await httpclient.GetAsync("RolUsuario");
-                        
-                    if (endpoint.IsSuccessStatusCode)
-                    {
-                        var responseString = await endpoint.Content.ReadAsStringAsync();
-                        result = JsonSerializer.Deserialize<OperationResult<List<RolUsuarioDTO>>>(responseString, _jsonSerializerOptions);
+            var result = await _rolUsuarioApiService.GetAllAsync();
 
-                        if (result != null && result.Success)
-                        {
-                            TempData["Success"] = result.Message;
-                            return PartialView("_List", result.Data ?? new List<RolUsuarioDTO>());
-                        }
-                        else
-                        {
-                            TempData["Error"] = result?.Message ?? "Error al obtener los roles";
-                            return PartialView("_List", new List<RolUsuarioDTO>());
-                        }
-                    }
-                    else
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return PartialView("_List", new List<RolUsuarioDTO>());
-                    }
-                }
-            }
-            catch (Exception ex)
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return PartialView("_List", new List<RolUsuarioDTO>());
+                TempData["Success"] = result.Message ?? SuccessMessages.Loaded;
+                return PartialView("_List", result.Data ?? new List<RolUsuarioDTO>());
             }
+
+            TempData["Error"] = errorMessage;
+            return PartialView("_List", new List<RolUsuarioDTO>());
         }
 
         public async Task<IActionResult> Details(int id)
         {
-            OperationResult<RolUsuarioDTO> result = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"RolUsuario/{id}");
-                    
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<RolUsuarioDTO>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success && result.Data != null)
-                    {
-                        TempData["Success"] = result.Message;
-                        return View(result.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = result?.Message ?? "Error desconocido al obtener detalles.";
-                        return RedirectToAction("Index");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                TempData["Error"] = idError;
                 return RedirectToAction("Index");
             }
+
+            var result = await _rolUsuarioApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                TempData["Success"] = result.Message;
+                return View(result.Data);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         public IActionResult Create()
@@ -121,94 +75,45 @@ namespace SGHR.Web.ApiConsumer.Controllers.Configuration
             if (!ModelState.IsValid)
                 return View(model);
 
-            OperationResult<RolUsuarioDTO> resultRol = null;
-            try
+            var result = await _rolUsuarioApiService.CreateAsync(model);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var json = JsonSerializer.Serialize(model);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var endpointCreate = await httpclient.PostAsync("RolUsuario", content);
-                    
-                    if (!endpointCreate.IsSuccessStatusCode)
-                    {
-                        var errorContent = await endpointCreate.Content.ReadAsStringAsync();
-                        var errorResult = JsonSerializer.Deserialize<OperationResult<RolUsuarioDTO>>(errorContent, _jsonSerializerOptions);
-
-                        TempData["Error"] = errorResult?.Message ?? $"Error al crear el rol (Código: {endpointCreate.StatusCode})";
-                        return View(model);
-                    }
-
-                    var responseContent = await endpointCreate.Content.ReadAsStringAsync();
-                    resultRol = JsonSerializer.Deserialize<OperationResult<RolUsuarioDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultRol != null && resultRol.Success)
-                    {
-                        TempData["Success"] = resultRol.Message ?? "Rol creado exitosamente";
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultRol?.Message ?? "Error al crear el rol";
-                        return View(model);
-                    }
-                }
+                TempData["Success"] = result.Message ?? SuccessMessages.GetCreatedMessage("Rol de Usuario");
+                return RedirectToAction("Index");
             }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
-            }
+
+            TempData["Error"] = errorMessage;
+            return View(model);
         }
 
         public async Task<IActionResult> Edit(int id)
         {
-            OperationResult<RolUsuarioDTO> resultRol = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"RolUsuario/{id}");
-                    
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    resultRol = JsonSerializer.Deserialize<OperationResult<RolUsuarioDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultRol != null && resultRol.Success && resultRol.Data != null)
-                    {
-                        var rol = resultRol.Data;
-                        var updateDto = new UpdateRolUsuarioDTO
-                        {
-                            Id = rol.Id,
-                            Nombre = rol.Nombre,
-                            Descripcion = rol.Descripcion,
-                            Estado = rol.Estado
-                        };
-
-                        TempData["Success"] = resultRol.Message;
-                        return View(updateDto);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultRol?.Message ?? "Error desconocido al preparar la edición.";
-                        return RedirectToAction("Index");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                TempData["Error"] = idError;
                 return RedirectToAction("Index");
             }
+
+            var result = await _rolUsuarioApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                var rol = result.Data;
+                var updateDto = new UpdateRolUsuarioDTO
+                {
+                    Id = rol.Id,
+                    Nombre = rol.Nombre,
+                    Descripcion = rol.Descripcion,
+                    Estado = rol.Estado
+                };
+
+                TempData["Success"] = result.Message;
+                return View(updateDto);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -218,85 +123,36 @@ namespace SGHR.Web.ApiConsumer.Controllers.Configuration
             if (!ModelState.IsValid)
                 return View(model);
 
-            OperationResult<RolUsuarioDTO> resultRol = null;
-            try
+            var result = await _rolUsuarioApiService.UpdateAsync(model);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var json = JsonSerializer.Serialize(model);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var endpointEdit = await httpclient.PutAsync("RolUsuario", content);
-                    
-                    if (!endpointEdit.IsSuccessStatusCode)
-                    {
-                        var errorContent = await endpointEdit.Content.ReadAsStringAsync();
-                        var errorResult = JsonSerializer.Deserialize<OperationResult<RolUsuarioDTO>>(errorContent, _jsonSerializerOptions);
-
-                        TempData["Error"] = errorResult?.Message ?? $"Error al actualizar el rol (Código: {endpointEdit.StatusCode})";
-                        return View(model);
-                    }
-
-                    var responseContent = await endpointEdit.Content.ReadAsStringAsync();
-                    resultRol = JsonSerializer.Deserialize<OperationResult<RolUsuarioDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultRol != null && resultRol.Success)
-                    {
-                        TempData["Success"] = resultRol.Message ?? "Rol actualizado exitosamente";
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultRol?.Message ?? "Error al actualizar el rol";
-                        return View(model);
-                    }
-                }
+                TempData["Success"] = result.Message ?? SuccessMessages.GetUpdatedMessage("Rol de Usuario");
+                return RedirectToAction("Index");
             }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
-            }
+
+            TempData["Error"] = errorMessage;
+            return View(model);
         }
 
         public async Task<IActionResult> _Delete(int id)
         {
-            OperationResult<RolUsuarioDTO> resultRol = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"RolUsuario/{id}");
-                    
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    resultRol = JsonSerializer.Deserialize<OperationResult<RolUsuarioDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultRol != null && resultRol.Success && resultRol.Data != null)
-                    {
-                        TempData["Success"] = resultRol.Message;
-                        return PartialView("_Delete", resultRol.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultRol?.Message ?? "Error desconocido al obtener el rol para eliminar.";
-                        return RedirectToAction("Index");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                TempData["Error"] = idError;
                 return RedirectToAction("Index");
             }
+
+            var result = await _rolUsuarioApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                TempData["Success"] = result.Message;
+                return PartialView("_Delete", result.Data);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -304,73 +160,19 @@ namespace SGHR.Web.ApiConsumer.Controllers.Configuration
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> _DeleteConfirmed(int id)
         {
-            OperationResult<bool> result = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpointRemove = await httpclient.DeleteAsync($"RolUsuario/{id}");
-                    
-                    if (!endpointRemove.IsSuccessStatusCode)
-                    {
-                        var errorContent = await endpointRemove.Content.ReadAsStringAsync();
-                        return Json(new { success = false, message = $"Error: {endpointRemove.StatusCode}. Detalles: {errorContent}" });
-                    }
-
-                    var content = await endpointRemove.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<bool>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        return Json(new { success = true, message = result.Message, data = result.Data });
-                    }
-                    else
-                    {
-                        return Json(new { success = false, message = $"Error {result?.Message ?? "Error desconocido al confirmar la eliminación"}" });
-                    }
-                }
+                return Json(new { success = false, message = idError });
             }
-            catch (Exception ex)
+
+            var result = await _rolUsuarioApiService.DeleteAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                return Json(new { success = false, message = $"Error al consumir la API: {ex.Message}" });
+                return Json(new { success = true, message = result.Message ?? SuccessMessages.GetDeletedMessage("Rol de Usuario"), data = result.Data });
             }
-        }
 
-        private async Task<List<RolUsuarioDTO>> GetRolesAsync()
-        {
-            try
-            {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-                    var endpoint = await httpclient.GetAsync("RolUsuario");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return new List<RolUsuarioDTO>();
-                    }
-
-                    var responseString = await endpoint.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<OperationResult<List<RolUsuarioDTO>>>(responseString, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        TempData["Success"] = result.Message;
-                        return result.Data ?? new List<RolUsuarioDTO>();
-                    }
-
-                    TempData["Error"] = result?.Message ?? "Error al obtener los roles";
-                    return new List<RolUsuarioDTO>();
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return new List<RolUsuarioDTO>();
-            }
+            return Json(new { success = false, message = errorMessage });
         }
     }
 }

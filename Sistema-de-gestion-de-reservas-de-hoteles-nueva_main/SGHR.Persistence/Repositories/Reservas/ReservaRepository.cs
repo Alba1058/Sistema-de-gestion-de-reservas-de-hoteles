@@ -23,24 +23,6 @@ namespace SGHR.Persistence.Repositories.Reservas
             var result = new OperationResult<Reserva>();
             try
             {
-                // Validar que el cliente existe
-                var clienteExiste = await _context.Set<Domain.Entities.Clientes.Cliente>()
-                    .AnyAsync(c => c.Id == entity.IdCliente && !c.IsDeleted);
-                if (!clienteExiste)
-                {
-                    _logger.LogWarning("Intento de crear reserva con cliente inexistente: {ClienteId}", entity.IdCliente);
-                    return OperationResult<Reserva>.Fail($"El cliente con ID {entity.IdCliente} no existe o está eliminado.");
-                }
-
-                // Validar que la habitación existe
-                var habitacionExiste = await _context.Set<Habitacion>()
-                    .AnyAsync(h => h.Id == entity.IdHabitacion && !h.IsDeleted);
-                if (!habitacionExiste)
-                {
-                    _logger.LogWarning("Intento de crear reserva con habitación inexistente: {HabitacionId}", entity.IdHabitacion);
-                    return OperationResult<Reserva>.Fail($"La habitación con ID {entity.IdHabitacion} no existe o está eliminada.");
-                }
-
                 await _entities.AddAsync(entity);
                 await _context.SaveChangesAsync();
 
@@ -146,37 +128,5 @@ namespace SGHR.Persistence.Repositories.Reservas
             }
         }
 
-        public async Task<OperationResult<bool>> CancelarReservaAsync(int reservaId)
-        {
-            try
-            {
-                var reserva = await _context.Set<Reserva>()
-                    .FirstOrDefaultAsync(r => r.Id == reservaId && !r.IsDeleted);
-
-                if (reserva == null)
-                {
-                    _logger.LogWarning("Intento de cancelar reserva no encontrada: {Id}", reservaId);
-                    return OperationResult<bool>.Fail("Reserva no encontrada.");
-                }
-
-                reserva.IsDeleted = true;
-                reserva.FechaModificacion = DateTime.UtcNow;
-
-                var updateResult = await base.UpdateEntityAsync(reserva);
-                if (!updateResult.Success)
-                {
-                    _logger.LogWarning("Error al cancelar reserva {Id}: {Mensaje}", reservaId, updateResult.Message);
-                    return OperationResult<bool>.Fail("Error al cancelar la reserva.");
-                }
-
-                _logger.LogInformation("Reserva {Id} cancelada correctamente.", reservaId);
-                return OperationResult<bool>.Ok(true, "Reserva cancelada correctamente.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error interno al cancelar reserva {Id}", reservaId);
-                return OperationResult<bool>.Fail("Error interno al cancelar la reserva.");
-            }
-        }
     }
 }

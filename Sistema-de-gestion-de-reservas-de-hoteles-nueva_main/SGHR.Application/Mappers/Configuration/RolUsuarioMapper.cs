@@ -33,5 +33,17 @@ namespace SGHR.Application.Mappers.Configuration
             MapperHelper.SetCreationFields(entity, usuario);
             return entity;
         }
+
+        public static void UpdateRolUsuarioFromDto(RolUsuario entity, UpdateRolUsuarioDTO dto, string? usuario = null)
+        {
+            if (entity == null || dto == null) return;
+
+            entity.Nombre = string.IsNullOrWhiteSpace(dto.Nombre) ? entity.Nombre : MapperHelper.Clean(dto.Nombre);
+            entity.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? entity.Descripcion : MapperHelper.Clean(dto.Descripcion);
+            entity.Estado = dto.Estado;
+            entity.IsDeleted = !dto.Estado;
+
+            MapperHelper.SetAuditFields(entity, usuario);
+        }
     }
 }

@@ -133,20 +133,5 @@ namespace SGHR.Persistence.Test2.Reservas
             Assert.False(result.Success); 
             Assert.Equal("El cliente no tiene reservas registradas.", result.Message);
         }
-
-        [Fact]
-        public async Task CancelarReservaAsync_ShouldSetIsDeletedTrue()
-        {
-            var reserva = new Reserva { IdCliente = 1, IdHabitacion = 1, Total = 100, IsDeleted = false, FechaInicio = DateTime.Now, FechaFin = DateTime.Now.AddDays(1) };
-            await _reservaRepository.SaveEntityAsync(reserva);
-
-            var cancelResult = await _reservaRepository.CancelarReservaAsync(reserva.Id);
-            var retrievedReserva = await _reservaRepository.GetEntityByIdAsync(reserva.Id); 
-
-            Assert.True(cancelResult.Success);
-            Assert.True(cancelResult.Data);
-            Assert.NotNull(retrievedReserva);
-            Assert.True(retrievedReserva.IsDeleted);
-        }
     }
 }

@@ -1,0 +1,105 @@
+@{
+    ViewData["Title"] = "Sistema de Gestión de Reservas de Hoteles";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-4LISF5TTJX/fLmGSsOcH+O0z5F1J4Bv4B4CpB1B4E0kBMqaI8n3n8e8NZR2Xj6AL" crossorigin="anonymous">
+
+<div class="container-fluid mt-5">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-8 col-lg-6">
+            <div class="text-center mb-5">
+                <h1 class="display-3 text-primary mb-3">
+                    <i class="bi bi-building"></i> SGHR
+                </h1>
+                <p class="lead text-muted">Sistema de Gestión de Reservas de Hoteles</p>
+            </div>
+
+            <div class="row g-4">
+                <!-- Aplicación de Producción -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-lg border-0 hover-lift">
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="bi bi-shield-check text-primary" style="font-size: 4rem;"></i>
+                            </div>
+                <h3 class="card-title mb-3">Aplicación de Producción</h3>
+                <p class="card-text text-muted mb-4">
+                    <strong>Frontend Real del Sistema</strong><br>
+                    Sistema completo con autenticación, dashboards por rol (Administrador, Recepcionista, Cliente) y todas las funcionalidades. 
+                    <br><br>
+                    <small class="text-info">
+                        <i class="bi bi-info-circle"></i> Esta es la aplicación que los usuarios finales usarán en producción.
+                    </small>
+                </p>
+                            <a href="@Url.Action("Login", "Authentication")" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modo Prueba / Desarrollo -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-lg border-0 hover-lift">
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="bi bi-tools text-warning" style="font-size: 4rem;"></i>
+                            </div>
+                <h3 class="card-title mb-3">Modo Prueba / Desarrollo</h3>
+                <p class="card-text text-muted mb-4">
+                    <strong>Herramienta para Desarrolladores</strong><br>
+                    Acceso directo para probar el consumo de la API REST. Sin autenticación requerida.
+                    <br><br>
+                    <small class="text-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Solo para pruebas durante el desarrollo. No es el frontend de producción.
+                    </small>
+                </p>
+                            <a href="@Url.Action("App", "Home")" class="btn btn-warning btn-lg w-100">
+                                <i class="bi bi-code-slash"></i> Modo Prueba
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-5">
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-lightbulb"></i> ¿Cuál usar?</h6>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>Para usuarios finales:</strong> Usa "Aplicación de Producción" (requiere login).<br>
+                        <strong>Para desarrolladores:</strong> Usa "Modo Prueba" para probar el consumo de API.
+                    </p>
+                </div>
+                <p class="text-muted mt-3">
+                    <small>
+                        <i class="bi bi-info-circle"></i> 
+                        Selecciona una opción para continuar
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+    }
+    
+    .card {
+        border-radius: 15px;
+    }
+
+    .min-vh-100 {
+        min-height: 80vh;
+    }
+</style>
+

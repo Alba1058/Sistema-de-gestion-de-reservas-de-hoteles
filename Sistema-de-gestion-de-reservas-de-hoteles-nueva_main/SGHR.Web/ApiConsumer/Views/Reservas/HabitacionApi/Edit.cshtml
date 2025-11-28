@@ -1,4 +1,4 @@
-@model SGHR.Application.DTOs.Reservas.Habitacion.UpdateHabitacionDTO
+@model SGHR.Web.ViewModels.Reservas.EditHabitacionViewModel
 
 @{
     ViewData["Title"] = "Editar Habitación";
@@ -11,7 +11,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-warning text-dark">
                     <h4 class="mb-0">
-                        <i class="bi bi-pencil"></i> Editar Habitación #@Model.Numero
+                        <i class="bi bi-pencil"></i> Editar Habitación #@Model.Habitacion.Numero
                     </h4>
                 </div>
                 <div class="card-body">
@@ -27,54 +27,71 @@
                         @Html.AntiForgeryToken()
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="Habitacion.Id" />
 
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label asp-for="Numero" class="form-label fw-bold">Número</label>
-                                <input asp-for="Numero" class="form-control" type="number" />
-                                <span asp-validation-for="Numero" class="text-danger"></span>
+                                <label asp-for="Habitacion.Numero" class="form-label fw-bold">Número</label>
+                                <input asp-for="Habitacion.Numero" class="form-control" type="number" />
+                                <span asp-validation-for="Habitacion.Numero" class="text-danger"></span>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label asp-for="IdCategoria" class="form-label fw-bold">ID Categoría</label>
-                                <input asp-for="IdCategoria" class="form-control" type="number" />
-                                <span asp-validation-for="IdCategoria" class="text-danger"></span>
+                                <label asp-for="Habitacion.IdCategoria" class="form-label fw-bold">Categoría</label>
+                                <select asp-for="Habitacion.IdCategoria" class="form-select">
+                                    <option value="">Seleccione una categoría</option>
+                                    @foreach (var categoria in Model.Categorias)
+                                    {
+                                        <option value="@categoria.Id">@categoria.Nombre</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Habitacion.IdCategoria" class="text-danger"></span>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label asp-for="IdPiso" class="form-label fw-bold">ID Piso</label>
-                                <input asp-for="IdPiso" class="form-control" type="number" />
-                                <span asp-validation-for="IdPiso" class="text-danger"></span>
+                                <label asp-for="Habitacion.IdPiso" class="form-label fw-bold">Piso</label>
+                                <select asp-for="Habitacion.IdPiso" class="form-select">
+                                    <option value="">Seleccione un piso</option>
+                                    @foreach (var piso in Model.Pisos)
+                                    {
+                                        <option value="@piso.Id">@piso.Numero</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Habitacion.IdPiso" class="text-danger"></span>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label asp-for="PrecioBase" class="form-label fw-bold">Precio Base</label>
+                                <label asp-for="Habitacion.PrecioBase" class="form-label fw-bold">Precio Base</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input asp-for="PrecioBase" class="form-control" type="number" step="0.01" min="0" />
+                                    <input asp-for="Habitacion.PrecioBase" class="form-control" type="number" step="0.01" min="0" />
                                 </div>
-                                <span asp-validation-for="PrecioBase" class="text-danger"></span>
+                                <span asp-validation-for="Habitacion.PrecioBase" class="text-danger"></span>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label asp-for="EstadoHabitacion" class="form-label fw-bold">Estado Habitación</label>
-                                <input asp-for="EstadoHabitacion" class="form-control" />
-                                <span asp-validation-for="EstadoHabitacion" class="text-danger"></span>
+                                <label asp-for="Habitacion.EstadoHabitacion" class="form-label fw-bold">Estado Habitación</label>
+                                <select asp-for="Habitacion.EstadoHabitacion" class="form-select">
+                                    @foreach (var estado in Model.EstadosHabitacion)
+                                    {
+                                        <option value="@estado.Key">@estado.Value</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Habitacion.EstadoHabitacion" class="text-danger"></span>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label asp-for="Estado" class="form-label fw-bold">Estado (Activo/Inactivo)</label>
-                                <select asp-for="Estado" class="form-select">
+                                <label asp-for="Habitacion.Estado" class="form-label fw-bold">Estado (Activo/Inactivo)</label>
+                                <select asp-for="Habitacion.Estado" class="form-select">
                                     <option value="true">Activo</option>
                                     <option value="false">Inactivo</option>
                                 </select>
-                                <span asp-validation-for="Estado" class="text-danger"></span>
+                                <span asp-validation-for="Habitacion.Estado" class="text-danger"></span>
                             </div>
                         </div>
 
                         <div class="col-md-12 mb-3">
-                            <label asp-for="Descripcion" class="form-label fw-bold">Descripción</label>
-                            <textarea asp-for="Descripcion" class="form-control" rows="3"></textarea>
-                            <span asp-validation-for="Descripcion" class="text-danger"></span>
+                            <label asp-for="Habitacion.Descripcion" class="form-label fw-bold">Descripción</label>
+                            <textarea asp-for="Habitacion.Descripcion" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Habitacion.Descripcion" class="text-danger"></span>
                         </div>
 
                         <div class="d-flex gap-2 mt-4">

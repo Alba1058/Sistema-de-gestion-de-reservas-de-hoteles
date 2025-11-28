@@ -1,346 +1,342 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SGHR.Application.DTOs.Reservas.Reserva;
 using SGHR.Domain.Base;
-using System.Text;
-using System.Text.Json;
+using SGHR.Web.Infrastructure.Services.Api.Facade;
+using SGHR.Web.Infrastructure.Services.Api.Interfaces;
+using SGHR.Web.ViewModels.Reservas;
+using SGHR.Web.Helpers;
+using System.Net.Http;
 
 namespace SGHR.Web.ApiConsumer.Controllers.Reservas
 {
     public class ReservaApiController : Controller
     {
         private readonly ILogger<ReservaApiController> _logger;
-        private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        private readonly IReservaApiService _reservaApiService;
+        private readonly IReservaApiFacade _reservaApiFacade;
 
-        private const string BaseApiAddress = "http://localhost:5066/api/";
-
-        public ReservaApiController(ILogger<ReservaApiController> logger)
+        public ReservaApiController(
+            IReservaApiService reservaApiService,
+            IReservaApiFacade reservaApiFacade,
+            ILogger<ReservaApiController> logger)
         {
-            _logger = logger;
+            _reservaApiService = reservaApiService ?? throw new ArgumentNullException(nameof(reservaApiService));
+            _reservaApiFacade = reservaApiFacade ?? throw new ArgumentNullException(nameof(reservaApiFacade));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IActionResult> Index()
         {
-            var reservas = await GetReservasAsync(suppressTempData: true);
-            return View(reservas);
+            try
+            {
+                var result = await _reservaApiService.GetAllAsync();
+                var reservas = result?.Data ?? new List<ReservaDTO>();
+                return View(reservas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener la lista de reservas");
+                TempData["Error"] = "Error al cargar las reservas";
+                return View(new List<ReservaDTO>());
+            }
         }
 
         public async Task<IActionResult> _List()
         {
-            OperationResult<List<ReservaDTO>> result = null;
             try
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-                    var endpoint = await httpclient.GetAsync("Reserva");
-                        
-                    if (endpoint.IsSuccessStatusCode)
-                    {
-                        var responseString = await endpoint.Content.ReadAsStringAsync();
-                        result = JsonSerializer.Deserialize<OperationResult<List<ReservaDTO>>>(responseString, _jsonSerializerOptions);
+                var result = await _reservaApiService.GetAllAsync();
 
-                        if (result != null && result.Success)
-                        {
-                            return PartialView("_List", result.Data ?? new List<ReservaDTO>());
-                        }
-                        else
-                        {
-                            return PartialView("_List", new List<ReservaDTO>());
-                        }
-                    }
-                    else
-                    {
-                        return PartialView("_List", new List<ReservaDTO>());
-                    }
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage))
+                {
+                    TempData["Success"] = result.Message ?? SuccessMessages.Loaded;
+                    return PartialView("_List", result.Data ?? new List<ReservaDTO>());
                 }
+
+                TempData["Error"] = errorMessage;
+                return PartialView("_List", new List<ReservaDTO>());
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                _logger.LogError(ex, "Error al obtener la lista de reservas (partial)");
+                TempData["Error"] = "Error al cargar las reservas";
                 return PartialView("_List", new List<ReservaDTO>());
             }
         }
 
         public async Task<IActionResult> Details(int id)
         {
-            OperationResult<ReservaDTO> result = null;
+            if (!ErrorHelper.IsValidId(id, out string? idError))
+            {
+                TempData["Error"] = idError;
+                return RedirectToAction("Index");
+            }
+
             try
             {
-                using (var httpclient = new HttpClient())
+                var result = await _reservaApiService.GetByIdAsync(id);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"Reserva/{id}");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<ReservaDTO>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success && result.Data != null)
-                    {
-                        return View(result.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = result?.Message ?? "Error desconocido al obtener detalles.";
-                        return RedirectToAction("Index");
-                    }
+                    return View(result.Data);
                 }
+
+                TempData["Error"] = errorMessage;
+                return RedirectToAction("Index");
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogWarning(ex, "Reserva no encontrada - ID: {Id}", id);
+                TempData["Error"] = "La reserva solicitada no fue encontrada";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                _logger.LogError(ex, "Error al obtener detalles de reserva - ID: {Id}", id);
+                TempData["Error"] = "Error al cargar los detalles de la reserva";
                 return RedirectToAction("Index");
             }
         }
 
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            TempData.Remove("Success");
-            TempData.Remove("Error");
-            var model = new CreateReservaDTO();
-            return View(model);
+            try
+            {
+                TempData.Remove("Success");
+                TempData.Remove("Error");
+
+                var viewModel = await _reservaApiFacade.GetCreateReservaDataAsync();
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cargar datos para crear reserva");
+                TempData["Error"] = "Error al cargar los datos necesarios";
+                return RedirectToAction("Index");
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateReservaDTO model)
+        public async Task<IActionResult> Create(CreateReservaViewModel viewModel)
         {
-            if (model.FechaInicio == default(DateTime) || model.FechaInicio < DateTime.Now.AddDays(-1))
-            {
-                ModelState.AddModelError("FechaInicio", "La fecha de inicio debe ser válida y no puede ser anterior a hoy.");
-            }
-
-            if (model.FechaFin == default(DateTime) || model.FechaFin < model.FechaInicio)
-            {
-                ModelState.AddModelError("FechaFin", "La fecha de fin debe ser válida y posterior a la fecha de inicio.");
-            }
-
-            if (!ModelState.IsValid)
-                return View(model);
-
-            OperationResult<ReservaDTO> resultReserva = null;
             try
             {
-                using (var httpclient = new HttpClient())
+                if (viewModel?.Reserva == null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var json = JsonSerializer.Serialize(model);
-                    _logger.LogInformation($"ReservaApiController.Create POST: Iniciando creación de reserva. ModelState.IsValid: {ModelState.IsValid}");
-                    _logger.LogInformation($"ReservaApiController.Create POST: JSON enviado a la API: {json}");
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var endpointCreate = await httpclient.PostAsync("Reserva", content);
-
-                    var responseContent = await endpointCreate.Content.ReadAsStringAsync();
-                    _logger.LogInformation($"ReservaApiController.Create POST: Respuesta de la API (StatusCode: {endpointCreate.StatusCode}). Contenido: {responseContent}");
-
-                    if (!endpointCreate.IsSuccessStatusCode)
-                    {
-                        try
-                        {
-                            var errorResult = JsonSerializer.Deserialize<OperationResult<ReservaDTO>>(responseContent, _jsonSerializerOptions);
-                            TempData["Error"] = errorResult?.Message ?? $"Error al crear la reserva (Código: {endpointCreate.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        catch (JsonException jex)
-                        {
-                            TempData["Error"] = $"Error al crear la reserva (Código: {endpointCreate.StatusCode}). No se pudo deserializar la respuesta de error. Detalles: {responseContent}. Excepción: {jex.Message}";
-                        }
-                        catch
-                        {
-                            TempData["Error"] = $"Error al crear la reserva (Código: {endpointCreate.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        return View(model);
-                    }
-
-                    resultReserva = JsonSerializer.Deserialize<OperationResult<ReservaDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultReserva != null && resultReserva.Success)
-                    {
-                        TempData["Success"] = resultReserva.Message ?? "Reserva creada exitosamente";
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultReserva?.Message ?? "Error al crear la reserva";
-                        return View(model);
-                    }
+                    _logger.LogError("El modelo recibido es null");
+                    TempData["Error"] = "El modelo recibido es nulo";
+                    return await Create();
                 }
+
+                var model = viewModel.Reserva;
+
+                if (model.FechaInicio == default(DateTime) || model.FechaInicio < DateTime.Now.AddDays(-1))
+                {
+                    ModelState.AddModelError("Reserva.FechaInicio", "La fecha de inicio debe ser válida y no puede ser anterior a hoy.");
+                }
+
+                if (model.FechaFin == default(DateTime) || model.FechaFin < model.FechaInicio)
+                {
+                    ModelState.AddModelError("Reserva.FechaFin", "La fecha de fin debe ser válida y posterior a la fecha de inicio.");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    viewModel = await _reservaApiFacade.GetCreateReservaDataAsync();
+                    viewModel.Reserva = model;
+                    return View(viewModel);
+                }
+
+                var result = await _reservaApiService.CreateAsync(model);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage))
+                {
+                    TempData["Success"] = result.Message ?? SuccessMessages.GetCreatedMessage("Reserva");
+                    return RedirectToAction("Index");
+                }
+
+                TempData["Error"] = errorMessage;
+                viewModel = await _reservaApiFacade.GetCreateReservaDataAsync();
+                viewModel.Reserva = model;
+                return View(viewModel);
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogError(ex, "Recurso no encontrado al crear reserva");
+                TempData["Error"] = "El recurso solicitado no fue encontrado";
+                return await Create();
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("500"))
+            {
+                _logger.LogError(ex, "Error del servidor al crear reserva");
+                TempData["Error"] = "Error interno del servidor. Por favor, intente más tarde";
+                return await Create();
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Timeout al crear reserva");
+                TempData["Error"] = "La operación tardó demasiado. Por favor, intente nuevamente";
+                return await Create();
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
+                _logger.LogError(ex, "Error inesperado al crear reserva");
+                TempData["Error"] = "Ocurrió un error inesperado. Por favor, contacte al administrador";
+                return await Create();
             }
         }
+
 
         public async Task<IActionResult> Edit(int id)
         {
-            OperationResult<ReservaDTO> resultReserva = null;
+            if (!ErrorHelper.IsValidId(id, out string? idError))
+            {
+                TempData["Error"] = idError;
+                return RedirectToAction("Index");
+            }
+
             try
             {
-                using (var httpclient = new HttpClient())
+                // verificacion de que la reserva existe
+                var reservaResult = await _reservaApiService.GetByIdAsync(id);
+                
+                if (!ErrorHelper.IsSuccess(reservaResult, out string? errorMessage) || reservaResult.Data == null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"Reserva/{id}");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    resultReserva = JsonSerializer.Deserialize<OperationResult<ReservaDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultReserva != null && resultReserva.Success && resultReserva.Data != null)
-                    {
-                        var reserva = resultReserva.Data;
-                        var updateDto = new UpdateReservaDTO
-                        {
-                            Id = reserva.Id,
-                            IdCliente = reserva.IdCliente,
-                            IdHabitacion = reserva.IdHabitacion,
-                            FechaInicio = reserva.FechaInicio,
-                            FechaFin = reserva.FechaFin,
-                            NumeroHuespedes = reserva.NumeroHuespedes,
-                            Total = reserva.Total,
-                            EstadoReserva = reserva.EstadoReserva,
-                            Estado = reserva.Estado
-                        };
-
-                        return View(updateDto);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultReserva?.Message ?? "Error desconocido al preparar la edición.";
-                        return RedirectToAction("Index");
-                    }
+                    _logger.LogWarning("Reserva no encontrada para editar - ID: {Id}, Error: {Error}", id, errorMessage);
+                    TempData["Error"] = errorMessage ?? "La reserva solicitada no fue encontrada";
+                    return RedirectToAction("Index");
                 }
+
+                var viewModel = await _reservaApiFacade.GetEditReservaDataAsync(id);
+
+                if (viewModel?.Reserva == null || viewModel.Reserva.Id == 0)
+                {
+                    _logger.LogWarning("Error al cargar ViewModel para editar reserva - ID: {Id}. La reserva existe pero no se pudo cargar el ViewModel.", id);
+                    TempData["Error"] = "Error al cargar los datos para editar. Por favor, intente nuevamente.";
+                    return RedirectToAction("Index");
+                }
+
+                return View(viewModel);
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogWarning(ex, "Reserva no encontrada para editar - ID: {Id}", id);
+                TempData["Error"] = "La reserva solicitada no fue encontrada";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                _logger.LogError(ex, "Error al preparar edición de reserva - ID: {Id}", id);
+                TempData["Error"] = "Error al cargar los datos para editar";
                 return RedirectToAction("Index");
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(UpdateReservaDTO model)
+        public async Task<IActionResult> Edit(EditReservaViewModel viewModel)
         {
-            if (model.FechaInicio == default(DateTime) || model.FechaInicio < DateTime.Now.AddDays(-1))
-            {
-                ModelState.AddModelError("FechaInicio", "La fecha de inicio debe ser válida y no puede ser anterior a hoy.");
-            }
-
-            if (model.FechaFin == default(DateTime) || model.FechaFin < model.FechaInicio)
-            {
-                ModelState.AddModelError("FechaFin", "La fecha de fin debe ser válida y posterior a la fecha de inicio.");
-            }
-
-            if (!ModelState.IsValid)
-                return View(model);
-
-            OperationResult<ReservaDTO> resultReserva = null;
             try
             {
-                using (var httpclient = new HttpClient())
+                if (viewModel?.Reserva == null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var json = JsonSerializer.Serialize(model);
-                    _logger.LogInformation($"ReservaApiController.Edit POST: Iniciando edición de reserva. ModelState.IsValid: {ModelState.IsValid}");
-                    _logger.LogInformation($"ReservaApiController.Edit POST: JSON enviado a la API: {json}");
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var endpointEdit = await httpclient.PutAsync("Reserva", content);
-
-                    var responseContent = await endpointEdit.Content.ReadAsStringAsync();
-                    _logger.LogInformation($"ReservaApiController.Edit POST: Respuesta de la API (StatusCode: {endpointEdit.StatusCode}). Contenido: {responseContent}");
-
-                    if (!endpointEdit.IsSuccessStatusCode)
-                    {
-                        try
-                        {
-                            var errorResult = JsonSerializer.Deserialize<OperationResult<ReservaDTO>>(responseContent, _jsonSerializerOptions);
-                            TempData["Error"] = errorResult?.Message ?? $"Error al actualizar la reserva (Código: {endpointEdit.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        catch (JsonException jex)
-                        {
-                            TempData["Error"] = $"Error al actualizar la reserva (Código: {endpointEdit.StatusCode}). No se pudo deserializar la respuesta de error. Detalles: {responseContent}. Excepción: {jex.Message}";
-                        }
-                        catch
-                        {
-                            TempData["Error"] = $"Error al actualizar la reserva (Código: {endpointEdit.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        return View(model);
-                    }
-
-                    resultReserva = JsonSerializer.Deserialize<OperationResult<ReservaDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultReserva != null && resultReserva.Success)
-                    {
-                        TempData["Success"] = resultReserva.Message ?? "Reserva actualizada exitosamente";
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultReserva?.Message ?? "Error al actualizar la reserva";
-                        return View(model);
-                    }
+                    _logger.LogError("El modelo recibido es null");
+                    TempData["Error"] = "El modelo recibido es nulo";
+                    return RedirectToAction("Index");
                 }
+
+                var model = viewModel.Reserva;
+
+                if (!ErrorHelper.IsValidId(model.Id, out string? idError))
+                {
+                    TempData["Error"] = idError;
+                    return RedirectToAction("Index");
+                }
+
+                if (model.FechaInicio == default(DateTime) || model.FechaInicio < DateTime.Now.AddDays(-1))
+                {
+                    ModelState.AddModelError("Reserva.FechaInicio", "La fecha de inicio debe ser válida y no puede ser anterior a hoy.");
+                }
+
+                if (model.FechaFin == default(DateTime) || model.FechaFin < model.FechaInicio)
+                {
+                    ModelState.AddModelError("Reserva.FechaFin", "La fecha de fin debe ser válida y posterior a la fecha de inicio.");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    var editViewModelInvalid = await _reservaApiFacade.GetEditReservaDataAsync(model.Id);
+                    editViewModelInvalid.Reserva = model;
+                    return View(editViewModelInvalid);
+                }
+
+
+                var result = await _reservaApiService.UpdateAsync(model);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage))
+                {
+                    TempData["Success"] = result.Message ?? SuccessMessages.GetUpdatedMessage("Reserva");
+                    return RedirectToAction("Index");
+                }
+
+                TempData["Error"] = errorMessage;
+                
+                var editViewModelError = await _reservaApiFacade.GetEditReservaDataAsync(model.Id);
+                editViewModelError.Reserva = model;
+                return View(editViewModelError);
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogError(ex, "Recurso no encontrado al editar reserva");
+                TempData["Error"] = "El recurso solicitado no fue encontrado";
+                return RedirectToAction("Index");
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("500"))
+            {
+                _logger.LogError(ex, "Error del servidor al editar reserva");
+                TempData["Error"] = "Error interno del servidor. Por favor, intente más tarde";
+                return RedirectToAction("Index");
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Timeout al editar reserva");
+                TempData["Error"] = "La operación tardó demasiado. Por favor, intente nuevamente";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
+                _logger.LogError(ex, "Error inesperado al editar reserva");
+                TempData["Error"] = "Ocurrió un error inesperado. Por favor, contacte al administrador";
+                return RedirectToAction("Index");
             }
         }
 
         public async Task<IActionResult> _Delete(int id)
         {
-            OperationResult<ReservaDTO> resultReserva = null;
+            if (!ErrorHelper.IsValidId(id, out string? idError))
+            {
+                TempData["Error"] = idError;
+                return RedirectToAction("Index");
+            }
+
             try
             {
-                using (var httpclient = new HttpClient())
+                var result = await _reservaApiService.GetByIdAsync(id);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"Reserva/{id}");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    resultReserva = JsonSerializer.Deserialize<OperationResult<ReservaDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultReserva != null && resultReserva.Success && resultReserva.Data != null)
-                    {
-                        TempData["Success"] = resultReserva.Message;
-                        return PartialView("_Delete", resultReserva.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultReserva?.Message ?? "Error desconocido al obtener la reserva para eliminar.";
-                        return RedirectToAction("Index");
-                    }
+                    TempData["Success"] = result.Message;
+                    return PartialView("_Delete", result.Data);
                 }
+
+                TempData["Error"] = errorMessage;
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                _logger.LogError(ex, "Error al obtener reserva para eliminar - ID: {Id}", id);
+                TempData["Error"] = "Error al cargar los datos para eliminar";
                 return RedirectToAction("Index");
             }
         }
@@ -350,76 +346,31 @@ namespace SGHR.Web.ApiConsumer.Controllers.Reservas
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> _DeleteConfirmed(int id)
         {
-            OperationResult<bool> result = null;
+            if (!ErrorHelper.IsValidId(id, out string? idError))
+            {
+                return Json(new { success = false, message = idError });
+            }
+
             try
             {
-                using (var httpclient = new HttpClient())
+                var result = await _reservaApiService.DeleteAsync(id);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage))
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpointRemove = await httpclient.DeleteAsync($"Reserva/{id}");
-
-                    if (!endpointRemove.IsSuccessStatusCode)
-                    {
-                        var errorContent = await endpointRemove.Content.ReadAsStringAsync();
-                        return Json(new { success = false, message = $"Error: {endpointRemove.StatusCode}. Detalles: {errorContent}" });
-                    }
-
-                    var content = await endpointRemove.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<bool>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        return Json(new { success = true, message = result.Message, data = result.Data });
-                    }
-                    else
-                    {
-                        return Json(new { success = false, message = $"Error {result?.Message ?? "Error desconocido al confirmar la eliminación"}" });
-                    }
+                    return Json(new { success = true, message = result.Message ?? SuccessMessages.GetDeletedMessage("Reserva"), data = result.Data });
                 }
+
+                return Json(new { success = false, message = errorMessage });
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogWarning(ex, "Reserva no encontrada para eliminar - ID: {Id}", id);
+                return Json(new { success = false, message = "La reserva solicitada no fue encontrada" });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"Error al consumir la API: {ex.Message}" });
-            }
-        }
-
-        private async Task<List<ReservaDTO>> GetReservasAsync(bool suppressTempData = false)
-        {
-            try
-            {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-                    var endpoint = await httpclient.GetAsync("Reserva");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        if (!suppressTempData)
-                            TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return new List<ReservaDTO>();
-                    }
-
-                    var responseString = await endpoint.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<OperationResult<List<ReservaDTO>>>(responseString, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        if (!suppressTempData)
-                            TempData["Success"] = result.Message;
-                        return result.Data ?? new List<ReservaDTO>();
-                    }
-
-                    if (!suppressTempData)
-                        TempData["Error"] = result?.Message ?? "Error al obtener las reservas";
-                    return new List<ReservaDTO>();
-                }
-            }
-            catch (Exception ex)
-            {
-                if (!suppressTempData)
-                    TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return new List<ReservaDTO>();
+                _logger.LogError(ex, "Error inesperado al eliminar reserva - ID: {Id}", id);
+                return Json(new { success = false, message = "Ocurrió un error inesperado al eliminar la reserva" });
             }
         }
     }

@@ -227,7 +227,7 @@ namespace SGHR.Application.Test2.Usuarios
             var result = await _usuarioService.GetByEmailAsync("noexiste@test.com");
 
             Assert.False(result.Success);
-            Assert.Equal("Usuario no encontrado con el correo especificado.", result.Message); 
+            Assert.Equal("Usuario no encontrado.", result.Message); 
         }
 
         [Fact]

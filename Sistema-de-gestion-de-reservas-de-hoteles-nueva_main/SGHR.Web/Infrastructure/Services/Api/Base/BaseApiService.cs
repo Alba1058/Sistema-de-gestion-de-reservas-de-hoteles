@@ -1,19 +1,18 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using SGHR.Domain.Base;
-using SGHR.Web.Infrastructure.HttpClients;
 
 namespace SGHR.Web.Infrastructure.Services.Api.Base
 {
     public abstract class BaseApiService<TDto, TCreateDto, TUpdateDto, TDeleteDto>
     {
-        protected readonly HttpClient _httpClient;
+        protected readonly IHttpClientFactory _httpClientFactory;
         protected readonly ILogger _logger;
         protected readonly JsonSerializerOptions _jsonOptions;
 
-        protected BaseApiService(HttpClient httpClient, ILogger logger)
+        protected BaseApiService(IHttpClientFactory httpClientFactory, ILogger logger)
         {
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _jsonOptions = new JsonSerializerOptions
             {
@@ -29,25 +28,29 @@ namespace SGHR.Web.Infrastructure.Services.Api.Base
             try
             {
                 _logger.LogInformation("Obteniendo todos los {EntityName}", EntityName);
-                var response = await _httpClient.GetAsync(BaseEndpoint);
-
-                if (!response.IsSuccessStatusCode)
+                
+                using (HttpClient httpClient = _httpClientFactory.CreateClient("SGHRAPI"))
                 {
-                    var errorMessage = $"Error al obtener {EntityName}: {response.StatusCode}";
-                    _logger.LogWarning(errorMessage);
-                    return OperationResult<List<TDto>>.Fail(errorMessage);
+                    var response = await httpClient.GetAsync(BaseEndpoint);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorMessage = $"Error al obtener {EntityName}: {response.StatusCode}";
+                        _logger.LogWarning(errorMessage);
+                        return OperationResult<List<TDto>>.Fail(errorMessage);
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<OperationResult<List<TDto>>>(content, _jsonOptions);
+
+                    if (result != null && result.Success)
+                    {
+                        _logger.LogInformation("{EntityName} obtenidos correctamente", EntityName);
+                        return result;
+                    }
+
+                    return OperationResult<List<TDto>>.Fail(result?.Message ?? $"Error al obtener {EntityName}");
                 }
-
-                var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<OperationResult<List<TDto>>>(content, _jsonOptions);
-
-                if (result != null && result.Success)
-                {
-                    _logger.LogInformation("{EntityName} obtenidos correctamente", EntityName);
-                    return result;
-                }
-
-                return OperationResult<List<TDto>>.Fail(result?.Message ?? $"Error al obtener {EntityName}");
             }
             catch (Exception ex)
             {
@@ -64,25 +67,29 @@ namespace SGHR.Web.Infrastructure.Services.Api.Base
                     return OperationResult<TDto>.Fail($"El ID de {EntityName} no es válido.");
 
                 _logger.LogInformation("Obteniendo {EntityName} con ID: {Id}", EntityName, id);
-                var response = await _httpClient.GetAsync($"{BaseEndpoint}/{id}");
-
-                if (!response.IsSuccessStatusCode)
+                
+                using (HttpClient httpClient = _httpClientFactory.CreateClient("SGHRAPI"))
                 {
-                    var errorMessage = $"Error al obtener {EntityName}: {response.StatusCode}";
-                    _logger.LogWarning(errorMessage);
-                    return OperationResult<TDto>.Fail(errorMessage);
+                    var response = await httpClient.GetAsync($"{BaseEndpoint}/{id}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorMessage = $"Error al obtener {EntityName}: {response.StatusCode}";
+                        _logger.LogWarning(errorMessage);
+                        return OperationResult<TDto>.Fail(errorMessage);
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<OperationResult<TDto>>(content, _jsonOptions);
+
+                    if (result != null && result.Success && result.Data != null)
+                    {
+                        _logger.LogInformation("{EntityName} obtenido correctamente", EntityName);
+                        return result;
+                    }
+
+                    return OperationResult<TDto>.Fail(result?.Message ?? $"{EntityName} no encontrado.");
                 }
-
-                var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<OperationResult<TDto>>(content, _jsonOptions);
-
-                if (result != null && result.Success && result.Data != null)
-                {
-                    _logger.LogInformation("{EntityName} obtenido correctamente", EntityName);
-                    return result;
-                }
-
-                return OperationResult<TDto>.Fail(result?.Message ?? $"{EntityName} no encontrado.");
             }
             catch (Exception ex)
             {
@@ -99,27 +106,31 @@ namespace SGHR.Web.Infrastructure.Services.Api.Base
                     return OperationResult<TDto>.Fail($"El objeto {EntityName} no puede ser nulo.");
 
                 _logger.LogInformation("Creando {EntityName}", EntityName);
-                var response = await _httpClient.PostAsJsonAsync(BaseEndpoint, dto);
-
-                if (!response.IsSuccessStatusCode)
+                
+                using (HttpClient httpClient = _httpClientFactory.CreateClient("SGHRAPI"))
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    var errorResult = JsonSerializer.Deserialize<OperationResult<TDto>>(errorContent, _jsonOptions);
-                    var errorMessage = errorResult?.Message ?? $"Error al crear {EntityName} (Código: {response.StatusCode})";
-                    _logger.LogError("Error al crear {EntityName}: {Message}", EntityName, errorMessage);
-                    return OperationResult<TDto>.Fail(errorMessage);
+                    var response = await httpClient.PostAsJsonAsync(BaseEndpoint, dto);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        var errorResult = JsonSerializer.Deserialize<OperationResult<TDto>>(errorContent, _jsonOptions);
+                        var errorMessage = errorResult?.Message ?? $"Error al crear {EntityName} (Código: {response.StatusCode})";
+                        _logger.LogError("Error al crear {EntityName}: {Message}", EntityName, errorMessage);
+                        return OperationResult<TDto>.Fail(errorMessage);
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<OperationResult<TDto>>(content, _jsonOptions);
+
+                    if (result != null && result.Success)
+                    {
+                        _logger.LogInformation("{EntityName} creado exitosamente", EntityName);
+                        return result;
+                    }
+
+                    return OperationResult<TDto>.Fail(result?.Message ?? $"Error al crear {EntityName}");
                 }
-
-                var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<OperationResult<TDto>>(content, _jsonOptions);
-
-                if (result != null && result.Success)
-                {
-                    _logger.LogInformation("{EntityName} creado exitosamente", EntityName);
-                    return result;
-                }
-
-                return OperationResult<TDto>.Fail(result?.Message ?? $"Error al crear {EntityName}");
             }
             catch (Exception ex)
             {
@@ -136,27 +147,31 @@ namespace SGHR.Web.Infrastructure.Services.Api.Base
                     return OperationResult<TDto>.Fail($"El objeto {EntityName} no puede ser nulo.");
 
                 _logger.LogInformation("Actualizando {EntityName}", EntityName);
-                var response = await _httpClient.PutAsJsonAsync(BaseEndpoint, dto);
-
-                if (!response.IsSuccessStatusCode)
+                
+                using (HttpClient httpClient = _httpClientFactory.CreateClient("SGHRAPI"))
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    var errorResult = JsonSerializer.Deserialize<OperationResult<TDto>>(errorContent, _jsonOptions);
-                    var errorMessage = errorResult?.Message ?? $"Error al actualizar {EntityName} (Código: {response.StatusCode})";
-                    _logger.LogError("Error al actualizar {EntityName}: {Message}", EntityName, errorMessage);
-                    return OperationResult<TDto>.Fail(errorMessage);
+                    var response = await httpClient.PutAsJsonAsync(BaseEndpoint, dto);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        var errorResult = JsonSerializer.Deserialize<OperationResult<TDto>>(errorContent, _jsonOptions);
+                        var errorMessage = errorResult?.Message ?? $"Error al actualizar {EntityName} (Código: {response.StatusCode})";
+                        _logger.LogError("Error al actualizar {EntityName}: {Message}", EntityName, errorMessage);
+                        return OperationResult<TDto>.Fail(errorMessage);
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<OperationResult<TDto>>(content, _jsonOptions);
+
+                    if (result != null && result.Success)
+                    {
+                        _logger.LogInformation("{EntityName} actualizado exitosamente", EntityName);
+                        return result;
+                    }
+
+                    return OperationResult<TDto>.Fail(result?.Message ?? $"Error al actualizar {EntityName}");
                 }
-
-                var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<OperationResult<TDto>>(content, _jsonOptions);
-
-                if (result != null && result.Success)
-                {
-                    _logger.LogInformation("{EntityName} actualizado exitosamente", EntityName);
-                    return result;
-                }
-
-                return OperationResult<TDto>.Fail(result?.Message ?? $"Error al actualizar {EntityName}");
             }
             catch (Exception ex)
             {
@@ -173,26 +188,30 @@ namespace SGHR.Web.Infrastructure.Services.Api.Base
                     return OperationResult<bool>.Fail($"El ID de {EntityName} no es válido.");
 
                 _logger.LogInformation("Eliminando {EntityName} con ID: {Id}", EntityName, id);
-                var response = await _httpClient.DeleteAsync($"{BaseEndpoint}/{id}");
-
-                if (!response.IsSuccessStatusCode)
+                
+                using (HttpClient httpClient = _httpClientFactory.CreateClient("SGHRAPI"))
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    var errorMessage = $"Error al eliminar {EntityName} (Código: {response.StatusCode}). Detalles: {errorContent}";
-                    _logger.LogError(errorMessage);
-                    return OperationResult<bool>.Fail(errorMessage);
+                    var response = await httpClient.DeleteAsync($"{BaseEndpoint}/{id}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        var errorMessage = $"Error al eliminar {EntityName} (Código: {response.StatusCode}). Detalles: {errorContent}";
+                        _logger.LogError(errorMessage);
+                        return OperationResult<bool>.Fail(errorMessage);
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<OperationResult<bool>>(content, _jsonOptions);
+
+                    if (result != null && result.Success)
+                    {
+                        _logger.LogInformation("{EntityName} eliminado exitosamente", EntityName);
+                        return result;
+                    }
+
+                    return OperationResult<bool>.Fail(result?.Message ?? $"Error al eliminar {EntityName}");
                 }
-
-                var content = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<OperationResult<bool>>(content, _jsonOptions);
-
-                if (result != null && result.Success)
-                {
-                    _logger.LogInformation("{EntityName} eliminado exitosamente", EntityName);
-                    return result;
-                }
-
-                return OperationResult<bool>.Fail(result?.Message ?? $"Error al eliminar {EntityName}");
             }
             catch (Exception ex)
             {

@@ -1,158 +1,297 @@
-﻿@{
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+﻿@using SGHR.Application.DTOs.Reservas.Reserva
+@using SGHR.Application.DTOs.Clientes.Cliente
+@using SGHR.Application.DTOs.Reservas.Habitacion
+
+@{
+    ViewData["Title"] = "Dashboard";
+    var reservasRecientes = ViewBag.ReservasRecientes as List<ReservaDTO> ?? new List<ReservaDTO>();
+    var clientes = ViewBag.Clientes as List<ClienteDTO> ?? new List<ClienteDTO>();
+    var habitaciones = ViewBag.Habitaciones as List<HabitacionDTO> ?? new List<HabitacionDTO>();
 }
 
-<h2 class="dashboard-title mb-1">Panel General</h2>
-<p class="text-muted mb-4">Resumen del estado actual del hotel</p>
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="dashboard-title mb-1">
+                <i class="bi bi-speedometer2"></i> Panel de Control
+            </h2>
+            <p class="text-muted mb-0">Resumen del estado actual del hotel</p>
+        </div>
+        <div class="text-muted">
+            <i class="bi bi-calendar"></i> @DateTime.Now.ToString("dddd, dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-ES"))
+        </div>
+    </div>
 
-<!-- === CARDS SUPERIORES === -->
-<div class="row g-4">
-
-    <div class="col-md-3">
-        <div class="info-card-modern">
-            <div>
-                <small class="text-muted">Reservas Hoy</small>
-                <h3 class="fw-bold mt-1">24</h3>
+    <!-- === CARDS SUPERIORES === -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Reservas Hoy</small>
+                            <h3 class="mb-0 fw-bold">@ViewBag.ReservasHoy</h3>
+                            <small class="text-success">
+                                <i class="bi bi-arrow-up"></i> @ViewBag.TotalReservas totales
+                            </small>
+                        </div>
+                        <div class="text-primary" style="font-size: 3rem;">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <i class="bi bi-calendar2-check icon-lg"></i>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="info-card-modern">
-            <div>
-                <small class="text-muted">Habitaciones Disponibles</small>
-                <h3 class="fw-bold mt-1">48</h3>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Habitaciones Disponibles</small>
+                            <h3 class="mb-0 fw-bold text-success">@ViewBag.HabitacionesDisponibles</h3>
+                            <small class="text-muted">
+                                de @ViewBag.TotalHabitaciones totales
+                            </small>
+                        </div>
+                        <div class="text-success" style="font-size: 3rem;">
+                            <i class="bi bi-door-open"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <i class="bi bi-house-door icon-lg"></i>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="info-card-modern">
-            <div>
-                <small class="text-muted">Ingresos Mensuales</small>
-                <h3 class="fw-bold mt-1 text-success">$12,430</h3>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Ingresos del Mes</small>
+                            <h3 class="mb-0 fw-bold text-success">@(((decimal)ViewBag.IngresosMensuales).ToString("C"))</h3>
+                            <small class="text-muted">
+                                @DateTime.Now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("es-ES"))
+                            </small>
+                        </div>
+                        <div class="text-success" style="font-size: 3rem;">
+                            <i class="bi bi-cash-coin"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <i class="bi bi-cash-coin icon-lg"></i>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="info-card-modern">
-            <div>
-                <small class="text-muted">Ocupación (%)</small>
-                <h3 class="fw-bold mt-1">72%</h3>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted d-block">Ocupación Actual</small>
+                            <h3 class="mb-0 fw-bold text-info">@ViewBag.Ocupacion%</h3>
+                            <small class="text-muted">
+                                @ViewBag.TotalClientes clientes registrados
+                            </small>
+                        </div>
+                        <div class="text-info" style="font-size: 3rem;">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <i class="bi bi-speedometer2 icon-lg"></i>
         </div>
     </div>
 
-</div>
-
-<!-- === SECCIÓN PRINCIPAL === -->
-<div class="row mt-5 g-4">
-
-    <!-- Gráfica reservas -->
-    <div class="col-lg-8">
-        <div class="chart-box-modern">
-            <div class="d-flex justify-content-between">
-                <h5 class="fw-bold">Reservas por mes</h5>
-                <small class="text-muted">Últimos 12 meses</small>
-            </div>
-            <canvas id="reservasChart"></canvas>
-        </div>
-    </div>
-
-    <!-- NUEVO GRÁFICO DOUGHNUT (REEMPLAZA CALENDARIO) -->
-    <div class="col-lg-4">
-        <div class="chart-box-modern">
-            <h5 class="fw-bold mb-3">Distribución de Habitaciones</h5>
-            <canvas id="habitacionesPie"></canvas>
-        </div>
-    </div>
-
-</div>
-
-<!-- === TABLA === -->
-<div class="row mt-4">
-    <div class="col-lg-12">
-        <div class="table-box-modern">
-            <div class="d-flex justify-content-between mb-2">
-                <h5 class="fw-bold">Reservas recientes</h5>
-                <small class="text-muted">Últimas registradas</small>
-            </div>
-
-            <table class="table table-modern">
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Habitación</th>
-                        <th>Ingreso</th>
-                        <th>Egreso</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Pedro López</td>
-                        <td>101</td>
-                        <td>2025-11-18</td>
-                        <td>2025-11-21</td>
-                    </tr>
-                    <tr>
-                        <td>Mariana D.</td>
-                        <td>204</td>
-                        <td>2025-11-16</td>
-                        <td>2025-11-19</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-
-    <script>
-
-        // === Gráfica barras ===
-        new Chart(document.getElementById("reservasChart"), {
-            type: 'bar',
-            data: {
-                labels: ['Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb'],
-                datasets: [{
-                    data: [90,80,120,150,130,170,200,180,150,140,155,178],
-                    backgroundColor: '#2B4C7E',
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                responsive: true
-            }
-        });
-
-        // === Gráfico Doughnut moderno ===
-        new Chart(document.getElementById("habitacionesPie"), {
-            type: 'doughnut',
-            data: {
-                labels: ['Sencillas', 'Dobles', 'Suite', 'Deluxe'],
-                datasets: [{
-                    data: [45, 30, 15, 10],
-                    backgroundColor: ['#2B4C7E', '#4A6FA5', '#70A0AF', '#B8D8D8'],
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { padding: 20 }
+    <!-- === SECCIÓN PRINCIPAL === -->
+    <div class="row g-4">
+        <!-- Estado de Habitaciones -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bed"></i> Estado de Habitaciones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @{
+                        var disponibles = habitaciones.Count(h => h.EstadoHabitacion == 1 && h.Estado);
+                        var ocupadas = habitaciones.Count(h => h.EstadoHabitacion == 2 && h.Estado);
+                        var limpieza = habitaciones.Count(h => h.EstadoHabitacion == 3 && h.Estado);
+                        var mantenimiento = habitaciones.Count(h => h.EstadoHabitacion == 4 && h.Estado);
+                        var reservadas = habitaciones.Count(h => h.EstadoHabitacion == 5 && h.Estado);
                     }
-                }
-            }
-        });
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-check-circle text-success"></i> Disponibles</span>
+                            <strong class="text-success">@disponibles</strong>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: @(habitaciones.Count > 0 ? (disponibles * 100.0 / habitaciones.Count) : 0)%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-person-fill text-warning"></i> Ocupadas</span>
+                            <strong class="text-warning">@ocupadas</strong>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-warning" style="width: @(habitaciones.Count > 0 ? (ocupadas * 100.0 / habitaciones.Count) : 0)%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-broom text-info"></i> En Limpieza</span>
+                            <strong class="text-info">@limpieza</strong>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info" style="width: @(habitaciones.Count > 0 ? (limpieza * 100.0 / habitaciones.Count) : 0)%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-tools text-danger"></i> Mantenimiento</span>
+                            <strong class="text-danger">@mantenimiento</strong>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-danger" style="width: @(habitaciones.Count > 0 ? (mantenimiento * 100.0 / habitaciones.Count) : 0)%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span><i class="bi bi-calendar-check text-primary"></i> Reservadas</span>
+                            <strong class="text-primary">@reservadas</strong>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" style="width: @(habitaciones.Count > 0 ? (reservadas * 100.0 / habitaciones.Count) : 0)%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    </script>
+        <!-- Reservas Recientes -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Reservas Recientes
+                    </h5>
+                    <a href="@Url.Action("Index", "Reserva", new { area = "Administrador" })" class="btn btn-light btn-sm">
+                        Ver todas <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if (reservasRecientes.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Habitación</th>
+                                        <th>Fecha Inicio</th>
+                                        <th>Fecha Fin</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var reserva in reservasRecientes)
+                                    {
+                                        var cliente = clientes.FirstOrDefault(c => c.Id == reserva.IdCliente);
+                                        var habitacion = habitaciones.FirstOrDefault(h => h.Id == reserva.IdHabitacion);
+                                        <tr>
+                                            <td>
+                                                <strong>@(cliente != null ? $"{cliente.Nombre} {cliente.Apellido}" : $"Cliente #{reserva.IdCliente}")</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">#@(habitacion?.Numero ?? reserva.IdHabitacion)</span>
+                                            </td>
+                                            <td>@reserva.FechaInicio.ToString("dd/MM/yyyy")</td>
+                                            <td>@reserva.FechaFin.ToString("dd/MM/yyyy")</td>
+                                            <td><strong class="text-success">@reserva.Total.ToString("C")</strong></td>
+                                            <td>
+                                                @if (reserva.Estado)
+                                                {
+                                                    <span class="badge bg-success">Activa</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Inactiva</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-x" style="font-size: 3rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3 mb-0">No hay reservas recientes</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 
-}
+    <!-- Accesos Rápidos -->
+    <div class="row g-3 mt-4">
+        <div class="col-md-3">
+            <a href="@Url.Action("Create", "Habitacion", new { area = "Administrador" })" class="card border-0 shadow-sm text-decoration-none text-dark h-100 hover-lift">
+                <div class="card-body text-center">
+                    <i class="bi bi-plus-circle text-primary" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3 mb-0">Nueva Habitación</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="@Url.Action("Create", "Reserva", new { area = "Administrador" })" class="card border-0 shadow-sm text-decoration-none text-dark h-100 hover-lift">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar-plus text-success" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3 mb-0">Nueva Reserva</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="@Url.Action("Create", "Cliente", new { area = "Administrador" })" class="card border-0 shadow-sm text-decoration-none text-dark h-100 hover-lift">
+                <div class="card-body text-center">
+                    <i class="bi bi-person-plus text-info" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3 mb-0">Nuevo Cliente</h6>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="@Url.Action("Index", "Habitacion", new { area = "Administrador" })" class="card border-0 shadow-sm text-decoration-none text-dark h-100 hover-lift">
+                <div class="card-body text-center">
+                    <i class="bi bi-list-ul text-warning" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3 mb-0">Ver Todas las Habitaciones</h6>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .card {
+        border-radius: 10px;
+    }
+
+    .table th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+</style>

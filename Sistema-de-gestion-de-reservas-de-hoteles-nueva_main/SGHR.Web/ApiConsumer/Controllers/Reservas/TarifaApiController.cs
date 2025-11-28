@@ -1,74 +1,54 @@
 using Microsoft.AspNetCore.Mvc;
 using SGHR.Application.DTOs.Reservas.Tarifa;
 using SGHR.Domain.Base;
-using System.Text;
-using System.Text.Json;
+using SGHR.Web.Infrastructure.Services.Api.Interfaces;
+using SGHR.Web.Helpers;
 
 namespace SGHR.Web.ApiConsumer.Controllers.Reservas
 {
     public class TarifaApiController : Controller
     {
         private readonly ILogger<TarifaApiController> _logger;
-        private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        private readonly ITarifaApiService _tarifaApiService;
 
-        private const string BaseApiAddress = "http://localhost:5066/api/";
-
-        public TarifaApiController(ILogger<TarifaApiController> logger)
+        public TarifaApiController(
+            ITarifaApiService tarifaApiService,
+            ILogger<TarifaApiController> logger)
         {
-            _logger = logger;
+            _tarifaApiService = tarifaApiService ?? throw new ArgumentNullException(nameof(tarifaApiService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IActionResult> Index()
         {
-            var tarifas = await GetTarifasAsync();
+            var result = await _tarifaApiService.GetAllAsync();
+            var tarifas = result?.Data ?? new List<TarifaDTO>();
             return View(tarifas);
         }
 
         public async Task<IActionResult> _List()
         {
-            var tarifas = await GetTarifasAsync();
-            return PartialView("_List", tarifas);
+            var result = await _tarifaApiService.GetAllAsync();
+            return PartialView("_List", result?.Data ?? new List<TarifaDTO>());
         }
 
         public async Task<IActionResult> Details(int id)
         {
-            OperationResult<TarifaDTO> result = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"Tarifa/{id}");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<TarifaDTO>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success && result.Data != null)
-                    {
-                        return View(result.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = result?.Message ?? "Error desconocido al obtener detalles.";
-                        return RedirectToAction("Index");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                TempData["Error"] = idError;
                 return RedirectToAction("Index");
             }
+
+            var result = await _tarifaApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                return View(result.Data);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         public IActionResult Create()
@@ -85,112 +65,51 @@ namespace SGHR.Web.ApiConsumer.Controllers.Reservas
             if (!ModelState.IsValid)
                 return View(model);
 
-            OperationResult<TarifaDTO> resultTarifa = null;
-            try
+
+            var result = await _tarifaApiService.CreateAsync(model);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var json = JsonSerializer.Serialize(model);
-                    _logger.LogInformation($"TarifaApiController.Create POST: Iniciando creación de tarifa. ModelState.IsValid: {ModelState.IsValid}");
-                    _logger.LogInformation($"TarifaApiController.Create POST: JSON enviado a la API: {json}");
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var endpointCreate = await httpclient.PostAsync("Tarifa", content);
-
-                    var responseContent = await endpointCreate.Content.ReadAsStringAsync();
-                    _logger.LogInformation($"TarifaApiController.Create POST: Respuesta de la API (StatusCode: {endpointCreate.StatusCode}). Contenido: {responseContent}");
-
-                    if (!endpointCreate.IsSuccessStatusCode)
-                    {
-                        try
-                        {
-                            var errorResult = JsonSerializer.Deserialize<OperationResult<TarifaDTO>>(responseContent, _jsonSerializerOptions);
-                            TempData["Error"] = errorResult?.Message ?? $"Error al crear la tarifa (Código: {endpointCreate.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        catch (JsonException jex)
-                        {
-                            TempData["Error"] = $"Error al crear la tarifa (Código: {endpointCreate.StatusCode}). No se pudo deserializar la respuesta de error. Detalles: {responseContent}. Excepción: {jex.Message}";
-                        }
-                        catch
-                        {
-                            TempData["Error"] = $"Error al crear la tarifa (Código: {endpointCreate.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        return View(model);
-                    }
-
-                    resultTarifa = JsonSerializer.Deserialize<OperationResult<TarifaDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultTarifa != null && resultTarifa.Success)
-                    {
-                        TempData["Success"] = resultTarifa.Message ?? "Tarifa creada exitosamente";
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultTarifa?.Message ?? "Error al crear la tarifa";
-                        return View(model);
-                    }
-                }
+                TempData["Success"] = result.Message ?? SuccessMessages.GetCreatedMessage("Tarifa");
+                return RedirectToAction("Index");
             }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
-            }
+
+            TempData["Error"] = errorMessage;
+            return View(model);
         }
 
         public async Task<IActionResult> Edit(int id)
         {
-            OperationResult<TarifaDTO> resultTarifa = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"Tarifa/{id}");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    resultTarifa = JsonSerializer.Deserialize<OperationResult<TarifaDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultTarifa != null && resultTarifa.Success && resultTarifa.Data != null)
-                    {
-                        var tarifa = resultTarifa.Data;
-                        var updateDto = new UpdateTarifaDTO
-                        {
-                            Id = tarifa.Id,
-                            Tipo = tarifa.Tipo,
-                            Monto = tarifa.Monto,
-                            FechaInicio = tarifa.FechaInicio,
-                            FechaFin = tarifa.FechaFin,
-                            PrecioPorNoche = tarifa.PrecioPorNoche,
-                            Descuento = tarifa.Descuento,
-                            Descripcion = tarifa.Descripcion,
-                            IdHabitacion = tarifa.IdHabitacion,
-                            Estado = tarifa.Estado
-                        };
-
-                        return View(updateDto);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultTarifa?.Message ?? "Error desconocido al preparar la edición.";
-                        return RedirectToAction("Index");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                TempData["Error"] = idError;
                 return RedirectToAction("Index");
             }
+
+            var result = await _tarifaApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                var tarifa = result.Data;
+                var updateDto = new UpdateTarifaDTO
+                {
+                    Id = tarifa.Id,
+                    Tipo = tarifa.Tipo,
+                    Monto = tarifa.Monto,
+                    FechaInicio = tarifa.FechaInicio,
+                    FechaFin = tarifa.FechaFin,
+                    PrecioPorNoche = tarifa.PrecioPorNoche,
+                    Descuento = tarifa.Descuento,
+                    Descripcion = tarifa.Descripcion,
+                    IdHabitacion = tarifa.IdHabitacion,
+                    Estado = tarifa.Estado
+                };
+
+                return View(updateDto);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -200,88 +119,36 @@ namespace SGHR.Web.ApiConsumer.Controllers.Reservas
             if (!ModelState.IsValid)
                 return View(model);
 
-            OperationResult<TarifaDTO> resultTarifa = null;
-            try
+
+            var result = await _tarifaApiService.UpdateAsync(model);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var json = JsonSerializer.Serialize(model);
-                    _logger.LogInformation($"TarifaApiController.Edit POST: Iniciando edición de tarifa. ModelState.IsValid: {ModelState.IsValid}");
-                    _logger.LogInformation($"TarifaApiController.Edit POST: JSON enviado a la API: {json}");
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var endpointEdit = await httpclient.PutAsync("Tarifa", content);
-
-                    var responseContent = await endpointEdit.Content.ReadAsStringAsync();
-                    _logger.LogInformation($"TarifaApiController.Edit POST: Respuesta de la API (StatusCode: {endpointEdit.StatusCode}). Contenido: {responseContent}");
-
-                    if (!endpointEdit.IsSuccessStatusCode)
-                    {
-                        try
-                        {
-                            var errorResult = JsonSerializer.Deserialize<OperationResult<TarifaDTO>>(responseContent, _jsonSerializerOptions);
-                            TempData["Error"] = errorResult?.Message ?? $"Error al actualizar la tarifa (Código: {endpointEdit.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        catch (JsonException jex)
-                        {
-                            TempData["Error"] = $"Error al actualizar la tarifa (Código: {endpointEdit.StatusCode}). No se pudo deserializar la respuesta de error. Detalles: {responseContent}. Excepción: {jex.Message}";
-                        }
-                        catch
-                        {
-                            TempData["Error"] = $"Error al actualizar la tarifa (Código: {endpointEdit.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        return View(model);
-                    }
-
-                    resultTarifa = JsonSerializer.Deserialize<OperationResult<TarifaDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultTarifa != null && resultTarifa.Success)
-                    {
-                        TempData["Success"] = resultTarifa.Message ?? "Tarifa actualizada exitosamente";
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultTarifa?.Message ?? "Error al actualizar la tarifa";
-                        return View(model);
-                    }
-                }
+                TempData["Success"] = result.Message ?? SuccessMessages.GetUpdatedMessage("Tarifa");
+                return RedirectToAction("Index");
             }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
-            }
+
+            TempData["Error"] = errorMessage;
+            return View(model);
         }
 
         public async Task<IActionResult> _Delete(int id)
         {
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-                    var endpoint = await httpclient.GetAsync($"Tarifa/{id}");
-
-                    if (endpoint.IsSuccessStatusCode)
-                    {
-                        var responseString = await endpoint.Content.ReadAsStringAsync();
-                        var result = JsonSerializer.Deserialize<OperationResult<TarifaDTO>>(responseString, _jsonSerializerOptions);
-
-                        if (result != null && result.Success && result.Data != null)
-                        {
-                            return PartialView("_Delete", result.Data);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener la tarifa para eliminar");
+                TempData["Error"] = idError;
+                return RedirectToAction("Index");
             }
 
-            return PartialView("_Delete", null);
+            var result = await _tarifaApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                return PartialView("_Delete", result.Data);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -289,68 +156,19 @@ namespace SGHR.Web.ApiConsumer.Controllers.Reservas
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> _DeleteConfirmed(int id)
         {
-            OperationResult<bool> result = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpointRemove = await httpclient.DeleteAsync($"Tarifa/{id}");
-                    
-                    if (!endpointRemove.IsSuccessStatusCode)
-                    {
-                        var errorContent = await endpointRemove.Content.ReadAsStringAsync();
-                        return Json(new { success = false, message = $"Error: {endpointRemove.StatusCode}. Detalles: {errorContent}" });
-                    }
-
-                    var content = await endpointRemove.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<bool>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        return Json(new { success = true, message = result.Message, data = result.Data });
-                    }
-                    else
-                    {
-                        return Json(new { success = false, message = result?.Message ?? "Error al eliminar la tarifa" });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Error al consumir la API: {ex.Message}" });
-            }
-        }
-
-        private async Task<List<TarifaDTO>> GetTarifasAsync()
-        {
-            OperationResult<List<TarifaDTO>> result = null;
-            try
-            {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-                    var endpoint = await httpclient.GetAsync("Tarifa");
-
-                    if (endpoint.IsSuccessStatusCode)
-                    {
-                        var responseString = await endpoint.Content.ReadAsStringAsync();
-                        result = JsonSerializer.Deserialize<OperationResult<List<TarifaDTO>>>(responseString, _jsonSerializerOptions);
-
-                        if (result != null && result.Success)
-                        {
-                            return result.Data ?? new List<TarifaDTO>();
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener las tarifas");
+                return Json(new { success = false, message = idError });
             }
 
-            return new List<TarifaDTO>();
+            var result = await _tarifaApiService.DeleteAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
+            {
+                return Json(new { success = true, message = result.Message ?? SuccessMessages.GetDeletedMessage("Tarifa"), data = result.Data });
+            }
+
+            return Json(new { success = false, message = errorMessage });
         }
     }
 }

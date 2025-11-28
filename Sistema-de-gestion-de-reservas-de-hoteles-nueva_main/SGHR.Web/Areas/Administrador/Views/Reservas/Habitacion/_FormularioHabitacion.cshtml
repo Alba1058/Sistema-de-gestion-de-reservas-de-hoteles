@@ -1,43 +1,149 @@
-﻿@model SGHR.Application.DTOs.Reservas.Habitacion.CreateHabitacionDTO
+﻿@model dynamic
+@using SGHR.Application.DTOs.Reservas.Habitacion
+@using SGHR.Application.DTOs.Configuration.Categoria
+@using SGHR.Application.DTOs.Configuration.Piso
+@using SGHR.Domain.Enums
 
-<div class="form-group">
-    @Html.LabelFor(m => m.Numero)
-    @Html.TextBoxFor(m => m.Numero, new { @class = "form-control" })
-    @Html.ValidationMessageFor(m => m.Numero)
-</div>
+@{
+    var categorias = ViewBag.Categorias as List<CategoriaDTO> ?? new List<CategoriaDTO>();
+    var pisos = ViewBag.Pisos as List<PisoDTO> ?? new List<PisoDTO>();
+    var estadosHabitacion = Enum.GetValues(typeof(EstadoHabitacion)).Cast<EstadoHabitacion>().ToList();
+}
 
-<div class="form-group">
-    @Html.LabelFor(m => m.IdCategoria, "Categoría")
-    @Html.TextBoxFor(m => m.IdCategoria, new { @class = "form-control" })
-    @Html.ValidationMessageFor(m => m.IdCategoria)
-</div>
+<div class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label fw-bold">
+            <i class="bi bi-hash"></i> Número de Habitación
+        </label>
+        @if (Model is CreateHabitacionDTO createDto)
+        {
+            @Html.TextBoxFor(m => createDto.Numero, new { @class = "form-control form-control-lg", type = "number", min = "1", required = "required" })
+            @Html.ValidationMessageFor(m => createDto.Numero, "", new { @class = "text-danger" })
+        }
+        else if (Model is UpdateHabitacionDTO updateDto)
+        {
+            @Html.TextBoxFor(m => updateDto.Numero, new { @class = "form-control form-control-lg", type = "number", min = "1", required = "required" })
+            @Html.ValidationMessageFor(m => updateDto.Numero, "", new { @class = "text-danger" })
+        }
+    </div>
 
-<div class="form-group">
-    @Html.LabelFor(m => m.IdPiso, "Piso")
-    @Html.TextBoxFor(m => m.IdPiso, new { @class = "form-control" })
-    @Html.ValidationMessageFor(m => m.IdPiso)
-</div>
+    <div class="col-md-6">
+        <label class="form-label fw-bold">
+            <i class="bi bi-currency-dollar"></i> Precio Base
+        </label>
+        @if (Model is CreateHabitacionDTO createDto2)
+        {
+            @Html.TextBoxFor(m => createDto2.PrecioBase, new { @class = "form-control form-control-lg", type = "number", step = "0.01", min = "0", required = "required" })
+            @Html.ValidationMessageFor(m => createDto2.PrecioBase, "", new { @class = "text-danger" })
+        }
+        else if (Model is UpdateHabitacionDTO updateDto2)
+        {
+            @Html.TextBoxFor(m => updateDto2.PrecioBase, new { @class = "form-control form-control-lg", type = "number", step = "0.01", min = "0", required = "required" })
+            @Html.ValidationMessageFor(m => updateDto2.PrecioBase, "", new { @class = "text-danger" })
+        }
+    </div>
 
-<div class="form-group">
-    @Html.LabelFor(m => m.EstadoHabitacion, "Estado de Habitación")
-    @Html.TextBoxFor(m => m.EstadoHabitacion, new { @class = "form-control" })
-    @Html.ValidationMessageFor(m => m.EstadoHabitacion)
-</div>
+    <div class="col-md-6">
+        <label class="form-label fw-bold">
+            <i class="bi bi-tags"></i> Categoría
+        </label>
+        @if (Model is CreateHabitacionDTO createDto3)
+        {
+            @Html.DropDownListFor(m => createDto3.IdCategoria, 
+                new SelectList(categorias.Where(c => c.Estado), "Id", "Nombre"), 
+                "Seleccione una categoría", 
+                new { @class = "form-select form-select-lg", required = "required" })
+            @Html.ValidationMessageFor(m => createDto3.IdCategoria, "", new { @class = "text-danger" })
+        }
+        else if (Model is UpdateHabitacionDTO updateDto3)
+        {
+            @Html.DropDownListFor(m => updateDto3.IdCategoria, 
+                new SelectList(categorias.Where(c => c.Estado), "Id", "Nombre", updateDto3.IdCategoria), 
+                "Seleccione una categoría", 
+                new { @class = "form-select form-select-lg", required = "required" })
+            @Html.ValidationMessageFor(m => updateDto3.IdCategoria, "", new { @class = "text-danger" })
+        }
+    </div>
 
-<div class="form-group">
-    @Html.LabelFor(m => m.PrecioBase)
-    @Html.TextBoxFor(m => m.PrecioBase, new { @class = "form-control" })
-    @Html.ValidationMessageFor(m => m.PrecioBase)
-</div>
+    <div class="col-md-6">
+        <label class="form-label fw-bold">
+            <i class="bi bi-building"></i> Piso
+        </label>
+        @if (Model is CreateHabitacionDTO createDto4)
+        {
+            @Html.DropDownListFor(m => createDto4.IdPiso, 
+                new SelectList(pisos.Where(p => p.Estado), "Id", "Numero", null, "Piso {0}"), 
+                "Seleccione un piso", 
+                new { @class = "form-select form-select-lg", required = "required" })
+            @Html.ValidationMessageFor(m => createDto4.IdPiso, "", new { @class = "text-danger" })
+        }
+        else if (Model is UpdateHabitacionDTO updateDto4)
+        {
+            @Html.DropDownListFor(m => updateDto4.IdPiso, 
+                new SelectList(pisos.Where(p => p.Estado), "Id", "Numero", updateDto4.IdPiso, "Piso {0}"), 
+                "Seleccione un piso", 
+                new { @class = "form-select form-select-lg", required = "required" })
+            @Html.ValidationMessageFor(m => updateDto4.IdPiso, "", new { @class = "text-danger" })
+        }
+    </div>
 
-<div class="form-group">
-    @Html.LabelFor(m => m.Descripcion)
-    @Html.TextAreaFor(m => m.Descripcion, new { @class = "form-control" })
-    @Html.ValidationMessageFor(m => m.Descripcion)
-</div>
+    <div class="col-md-6">
+        <label class="form-label fw-bold">
+            <i class="bi bi-info-circle"></i> Estado de Habitación
+        </label>
+        @if (Model is CreateHabitacionDTO createDto5)
+        {
+            @Html.DropDownListFor(m => createDto5.EstadoHabitacion, 
+                new SelectList(estadosHabitacion.Select(e => new { Value = (int)e, Text = e.ToString() }), "Value", "Text", createDto5.EstadoHabitacion), 
+                "Seleccione un estado", 
+                new { @class = "form-select form-select-lg", required = "required" })
+            @Html.ValidationMessageFor(m => createDto5.EstadoHabitacion, "", new { @class = "text-danger" })
+        }
+        else if (Model is UpdateHabitacionDTO updateDto5)
+        {
+            @Html.DropDownListFor(m => updateDto5.EstadoHabitacion, 
+                new SelectList(estadosHabitacion.Select(e => new { Value = (int)e, Text = e.ToString() }), "Value", "Text", updateDto5.EstadoHabitacion), 
+                "Seleccione un estado", 
+                new { @class = "form-select form-select-lg", required = "required" })
+            @Html.ValidationMessageFor(m => updateDto5.EstadoHabitacion, "", new { @class = "text-danger" })
+        }
+    </div>
 
-<div class="form-group">
-    @Html.LabelFor(m => m.Estado)
-    @Html.CheckBoxFor(m => m.Estado)
-    @Html.ValidationMessageFor(m => m.Estado)
+    <div class="col-md-6">
+        <label class="form-label fw-bold">
+            <i class="bi bi-toggle-on"></i> Estado (Activa/Inactiva)
+        </label>
+        <div class="form-check form-switch mt-2">
+            @if (Model is CreateHabitacionDTO createDto6)
+            {
+                @Html.CheckBoxFor(m => createDto6.Estado, new { @class = "form-check-input", @checked = "checked", style = "width: 3rem; height: 1.5rem;" })
+                <label class="form-check-label ms-2" for="@Html.IdFor(m => createDto6.Estado)">
+                    @(createDto6.Estado ? "Habitación Activa" : "Habitación Inactiva")
+                </label>
+            }
+            else if (Model is UpdateHabitacionDTO updateDto6)
+            {
+                @Html.CheckBoxFor(m => updateDto6.Estado, new { @class = "form-check-input", style = "width: 3rem; height: 1.5rem;" })
+                <label class="form-check-label ms-2" for="@Html.IdFor(m => updateDto6.Estado)">
+                    @(updateDto6.Estado ? "Habitación Activa" : "Habitación Inactiva")
+                </label>
+            }
+        </div>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label fw-bold">
+            <i class="bi bi-card-text"></i> Descripción
+        </label>
+        @if (Model is CreateHabitacionDTO createDto7)
+        {
+            @Html.TextAreaFor(m => createDto7.Descripcion, new { @class = "form-control", rows = "4", placeholder = "Ingrese una descripción de la habitación (opcional)" })
+            @Html.ValidationMessageFor(m => createDto7.Descripcion, "", new { @class = "text-danger" })
+        }
+        else if (Model is UpdateHabitacionDTO updateDto7)
+        {
+            @Html.TextAreaFor(m => updateDto7.Descripcion, new { @class = "form-control", rows = "4", placeholder = "Ingrese una descripción de la habitación (opcional)" })
+            @Html.ValidationMessageFor(m => updateDto7.Descripcion, "", new { @class = "text-danger" })
+        }
+    </div>
 </div>

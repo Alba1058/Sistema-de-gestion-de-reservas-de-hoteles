@@ -10,7 +10,7 @@
     <title>Dashboard | SGHR</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" crossorigin="anonymous">
 
     <style>
         body {
@@ -115,38 +115,36 @@
 </head>
 <body>
     <div class="sidebar">
+        @{
+            var currentArea = ViewContext.RouteData.Values["area"]?.ToString();
+            
+            <a href="@Url.Action("Index", "Dashboard", new { area = currentArea })"><i class="bi bi-house-door"></i> Dashboard</a>
 
-        <a href="@Url.Action("Index", "Dashboard")"><i class="bi bi-house-door"></i> Dashboard</a>
+            <div style="margin-top: 10px; margin-bottom: 10px; padding-left: 15px; color: #8a9db8; font-size: 12px; font-weight: bold; text-transform: uppercase;">Reservas</div>
+            <a href="/HabitacionApi/Index"><i class="bi bi-bed"></i> Habitaciones</a>
+            <a href="/ReservaApi/Index"><i class="bi bi-calendar-check"></i> Reservas</a>
+            <a href="/TarifaApi/Index"><i class="bi bi-tag"></i> Tarifas</a>
+            <a href="/PagoApi/Index"><i class="bi bi-credit-card"></i> Pagos</a>
+            <a href="/ServicioAdicionalApi/Index"><i class="bi bi-plus-circle"></i> Servicios Adicionales</a>
 
-        <div style="margin-top: 10px; margin-bottom: 10px; padding-left: 15px; color: #8a9db8; font-size: 12px; font-weight: bold; text-transform: uppercase;">Reservas</div>
-        <a href="@Url.Action("Index", "HabitacionApi", new { area = "" })"><i class="bi bi-bed"></i> Habitaciones</a>
-        <a href="@Url.Action("Index", "ReservaApi", new { area = "" })"><i class="bi bi-calendar-check"></i> Reservas</a>
-        <a href="@Url.Action("Index", "TarifaApi", new { area = "" })"><i class="bi bi-tag"></i> Tarifas</a>
-        <a href="@Url.Action("Index", "PagoApi", new { area = "" })"><i class="bi bi-credit-card"></i> Pagos</a>
-        <a href="@Url.Action("Index", "ServicioAdicionalApi", new { area = "" })"><i class="bi bi-plus-circle"></i> Servicios Adicionales</a>
+            <div style="margin-top: 15px; margin-bottom: 10px; padding-left: 15px; color: #8a9db8; font-size: 12px; font-weight: bold; text-transform: uppercase;">Gestión</div>
+            <a href="/ClienteApi/Index"><i class="bi bi-people"></i> Clientes</a>
+            <a href="/UsuarioApi/Index"><i class="bi bi-person-badge"></i> Usuarios</a>
 
-        <div style="margin-top: 15px; margin-bottom: 10px; padding-left: 15px; color: #8a9db8; font-size: 12px; font-weight: bold; text-transform: uppercase;">Gestión</div>
-        <a href="@Url.Action("Index", "ClienteApi", new { area = "" })"><i class="bi bi-people"></i> Clientes</a>
-        <a href="@Url.Action("Index", "UsuarioApi", new { area = "" })"><i class="bi bi-person-badge"></i> Usuarios</a>
+            <div style="margin-top: 15px; margin-bottom: 10px; padding-left: 15px; color: #8a9db8; font-size: 12px; font-weight: bold; text-transform: uppercase;">Configuración</div>
+            <a href="/CategoriaApi/Index"><i class="bi bi-grid"></i> Categorías</a>
+            <a href="/PisoApi/Index"><i class="bi bi-building"></i> Pisos</a>
+            <a href="/RolUsuarioApi/Index"><i class="bi bi-shield-check"></i> Roles de Usuario</a>
 
-        <div style="margin-top: 15px; margin-bottom: 10px; padding-left: 15px; color: #8a9db8; font-size: 12px; font-weight: bold; text-transform: uppercase;">Configuración</div>
-        <a href="@Url.Action("Index", "CategoriaApi", new { area = "" })"><i class="bi bi-grid"></i> Categorías</a>
-        <a href="@Url.Action("Index", "PisoApi", new { area = "" })"><i class="bi bi-building"></i> Pisos</a>
-        <a href="@Url.Action("Index", "RolUsuarioApi", new { area = "" })"><i class="bi bi-shield-check"></i> Roles de Usuario</a>
-
-        <a href="/Authentication/Logout" class="logout" style="margin-top: 20px;"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
+            <a href="/Authentication/Logout" class="logout" style="margin-top: 20px;"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
+        }
     </div>
 
     <div class="content">
         @RenderBody()
     </div>
 
-
-    <div class="content">
-        @RenderBody()
-    </div>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 

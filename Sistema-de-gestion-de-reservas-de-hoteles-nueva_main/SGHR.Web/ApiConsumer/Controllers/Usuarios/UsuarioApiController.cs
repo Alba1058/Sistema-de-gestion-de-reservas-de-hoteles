@@ -1,110 +1,67 @@
 using Microsoft.AspNetCore.Mvc;
 using SGHR.Application.DTOs.Usuarios.Usuario;
 using SGHR.Domain.Base;
-using SGHR.Web.Infrastructure.HttpClients;
-using System.Text.Json;
+using SGHR.Web.Infrastructure.Services.Api.Interfaces;
+using SGHR.Web.Helpers;
 
 namespace SGHR.Web.ApiConsumer.Controllers.Usuarios
 {
     public class UsuarioApiController : Controller
     {
         private readonly ILogger<UsuarioApiController> _logger;
-        private readonly UsuarioHttpClient _usuarioClient = new UsuarioHttpClient();
-        private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        private readonly IUsuarioApiService _usuarioApiService;
 
-        public UsuarioApiController(ILogger<UsuarioApiController> logger)
+        public UsuarioApiController(
+            IUsuarioApiService usuarioApiService,
+            ILogger<UsuarioApiController> logger)
         {
-            _logger = logger;
+            _usuarioApiService = usuarioApiService ?? throw new ArgumentNullException(nameof(usuarioApiService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IActionResult> Index()
         {
-            var usuarios = await GetUsuariosAsync();
+            var result = await _usuarioApiService.GetAllAsync();
+            var usuarios = result?.Data ?? new List<UsuarioDTO>();
             return View(usuarios);
         }
 
         public async Task<IActionResult> _List()
         {
-            OperationResult<List<UsuarioDTO>> result = null;
-            try
-            {
-                using (_usuarioClient.client)
-                {
-                    var response = await _usuarioClient.Index();
-                        
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var responseString = await response.Content.ReadAsStringAsync();
-                        result = JsonSerializer.Deserialize<OperationResult<List<UsuarioDTO>>>(responseString, _jsonSerializerOptions);
+            var result = await _usuarioApiService.GetAllAsync();
 
-                        if (result != null && result.Success)
-                        {
-                            TempData["Success"] = result.Message;
-                            return PartialView("_List", result.Data ?? new List<UsuarioDTO>());
-                        }
-                        else
-                        {
-                            TempData["Error"] = result?.Message ?? "Error al obtener los usuarios";
-                            return PartialView("_List", new List<UsuarioDTO>());
-                        }
-                    }
-                    else
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {response.StatusCode}";
-                        return PartialView("_List", new List<UsuarioDTO>());
-                    }
-                }
-            }
-            catch (Exception ex)
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return PartialView("_List", new List<UsuarioDTO>());
+                TempData["Success"] = result.Message ?? SuccessMessages.Loaded;
+                return PartialView("_List", result.Data ?? new List<UsuarioDTO>());
             }
+
+            TempData["Error"] = errorMessage;
+            return PartialView("_List", new List<UsuarioDTO>());
         }
 
         public async Task<IActionResult> Details(int id)
         {
-            OperationResult<UsuarioDTO> result = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (_usuarioClient.client)
-                {
-                    var response = await _usuarioClient.Details(id);
-                    
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {response.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await response.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<UsuarioDTO>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success && result.Data != null)
-                    {
-                        TempData["Success"] = result.Message;
-                        return View(result.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = result?.Message ?? "Error desconocido al obtener detalles.";
-                        return RedirectToAction("Index");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                TempData["Error"] = idError;
                 return RedirectToAction("Index");
             }
+
+            var result = await _usuarioApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                TempData["Success"] = result.Message;
+                return View(result.Data);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         public IActionResult Create()
         {
-    
             TempData.Remove("Success");
             TempData.Remove("Error");
             var model = new UsuarioCreateDTO();
@@ -116,112 +73,65 @@ namespace SGHR.Web.ApiConsumer.Controllers.Usuarios
         public async Task<IActionResult> Create(UsuarioCreateDTO model)
         {
 
-            _logger.LogInformation($"UsuarioApiController.Create POST: Iniciando creación de usuario. ModelState.IsValid: {ModelState.IsValid}");
-
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning($"UsuarioApiController.Create POST: Errores de validación del modelo. Model: {JsonSerializer.Serialize(model)}");
+                var modelErrors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                
+                
+                TempData["Error"] = $"Errores de validación: {string.Join("; ", modelErrors)}";
                 return View(model);
             }
 
-            OperationResult<UsuarioDTO> resultUsuario = null;
-            try
+            if (model == null)
             {
-                using (_usuarioClient.client)
-                {
-                    var json = JsonSerializer.Serialize(model);
-                    _logger.LogInformation($"UsuarioApiController.Create POST: JSON enviado a la API: {json}");
-                    
-                    var response = await _usuarioClient.Create(model);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogInformation($"UsuarioApiController.Create POST: Respuesta de la API (StatusCode: {response.StatusCode}). Contenido: {responseContent}");
-                    
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        try
-                        {
-                            var errorResult = JsonSerializer.Deserialize<OperationResult<UsuarioDTO>>(responseContent, _jsonSerializerOptions);
-                            TempData["Error"] = errorResult?.Message ?? $"Error al crear el usuario (Código: {response.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        catch (JsonException jex)
-                        {
-                            TempData["Error"] = $"Error al crear el usuario (Código: {response.StatusCode}). No se pudo deserializar la respuesta de error. Detalles: {responseContent}. Excepción: {jex.Message}";
-                        }
-                        catch
-                        {
-                            TempData["Error"] = $"Error al crear el usuario (Código: {response.StatusCode}). Respuesta: {responseContent}";
-                        }
-                        return View(model);
-                    }
-
-                    resultUsuario = JsonSerializer.Deserialize<OperationResult<UsuarioDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultUsuario != null && resultUsuario.Success)
-                    {
-                        TempData["Success"] = resultUsuario.Message ?? "Usuario creado exitosamente";
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultUsuario?.Message ?? $"Error al crear el usuario. Respuesta: {responseContent}";
-                        return View(model);
-                    }
-                }
+                _logger.LogError("El modelo es null");
+                TempData["Error"] = "El modelo recibido es nulo";
+                return View(new UsuarioCreateDTO());
             }
-            catch (Exception ex)
+
+            var result = await _usuarioApiService.CreateAsync(model);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                var stackTrace = ex.StackTrace != null && ex.StackTrace.Length > 500 ? ex.StackTrace.Substring(0, 500) : ex.StackTrace ?? "";
-                _logger.LogError(ex, $"UsuarioApiController.Create POST: Excepción al consumir la API. Mensaje: {ex.Message}. StackTrace: {stackTrace}");
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}. StackTrace: {stackTrace}";
-                return View(model);
+                TempData["Success"] = result.Message ?? SuccessMessages.GetCreatedMessage("Usuario");
+                return RedirectToAction("Index");
             }
+
+            TempData["Error"] = errorMessage;
+            return View(model);
         }
 
         public async Task<IActionResult> Edit(int id)
         {
-            OperationResult<UsuarioDTO> resultUsuario = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (_usuarioClient.client)
-                {
-                    var response = await _usuarioClient.Details(id);
-                    
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {response.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await response.Content.ReadAsStringAsync();
-                    resultUsuario = JsonSerializer.Deserialize<OperationResult<UsuarioDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultUsuario != null && resultUsuario.Success && resultUsuario.Data != null)
-                    {
-                        var usuario = resultUsuario.Data;
-                        var updateDto = new UsuarioUpdateDTO
-                        {
-                            Id = usuario.Id,
-                            Nombre = usuario.Nombre,
-                            Email = usuario.Email,
-                            Activo = usuario.Activo,
-                            RolUsuarioId = usuario.RolUsuarioId
-                        };
-
-                        TempData["Success"] = resultUsuario.Message;
-                        return View(updateDto);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultUsuario?.Message ?? "Error desconocido al preparar la edición.";
-                        return RedirectToAction("Index");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                TempData["Error"] = idError;
                 return RedirectToAction("Index");
             }
+
+            var result = await _usuarioApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                var usuario = result.Data;
+                var updateDto = new UsuarioUpdateDTO
+                {
+                    Id = usuario.Id,
+                    Nombre = usuario.Nombre,
+                    Email = usuario.Email,
+                    Activo = usuario.Activo,
+                    RolUsuarioId = usuario.RolUsuarioId
+                };
+
+                TempData["Success"] = result.Message;
+                return View(updateDto);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -231,79 +141,36 @@ namespace SGHR.Web.ApiConsumer.Controllers.Usuarios
             if (!ModelState.IsValid)
                 return View(model);
 
-            OperationResult<UsuarioDTO> resultUsuario = null;
-            try
+            var result = await _usuarioApiService.UpdateAsync(model);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                using (_usuarioClient.client)
-                {
-                    var response = await _usuarioClient.Edit(model);
-                    
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var errorContent = await response.Content.ReadAsStringAsync();
-                        var errorResult = JsonSerializer.Deserialize<OperationResult<UsuarioDTO>>(errorContent, _jsonSerializerOptions);
-
-                        TempData["Error"] = errorResult?.Message ?? $"Error al actualizar el usuario (Código: {response.StatusCode})";
-                        return View(model);
-                    }
-
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    resultUsuario = JsonSerializer.Deserialize<OperationResult<UsuarioDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultUsuario != null && resultUsuario.Success)
-                    {
-                        TempData["Success"] = resultUsuario.Message ?? "Usuario actualizado exitosamente";
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultUsuario?.Message ?? "Error al actualizar el usuario";
-                        return View(model);
-                    }
-                }
+                TempData["Success"] = result.Message ?? SuccessMessages.GetUpdatedMessage("Usuario");
+                return RedirectToAction("Index");
             }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
-            }
+
+            TempData["Error"] = errorMessage;
+            return View(model);
         }
 
         public async Task<IActionResult> _Delete(int id)
         {
-            OperationResult<UsuarioDTO> resultUsuario = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (_usuarioClient.client)
-                {
-                    var response = await _usuarioClient.Details(id);
-                    
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {response.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await response.Content.ReadAsStringAsync();
-                    resultUsuario = JsonSerializer.Deserialize<OperationResult<UsuarioDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultUsuario != null && resultUsuario.Success && resultUsuario.Data != null)
-                    {
-                        TempData["Success"] = resultUsuario.Message;
-                        return PartialView("_Delete", resultUsuario.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultUsuario?.Message ?? "Error desconocido al obtener el usuario para eliminar.";
-                        return RedirectToAction("Index");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                TempData["Error"] = idError;
                 return RedirectToAction("Index");
             }
+
+            var result = await _usuarioApiService.GetByIdAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
+            {
+                TempData["Success"] = result.Message;
+                return PartialView("_Delete", result.Data);
+            }
+
+            TempData["Error"] = errorMessage;
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -311,70 +178,19 @@ namespace SGHR.Web.ApiConsumer.Controllers.Usuarios
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> _DeleteConfirmed(int id)
         {
-            OperationResult<bool> result = null;
-            try
+            if (!ErrorHelper.IsValidId(id, out string? idError))
             {
-                using (_usuarioClient.client)
-                {
-                    var response = await _usuarioClient.Delete(id);
-                    
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var errorContent = await response.Content.ReadAsStringAsync();
-                        return Json(new { success = false, message = $"Error: {response.StatusCode}. Detalles: {errorContent}" });
-                    }
-
-                    var content = await response.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<bool>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        return Json(new { success = true, message = result.Message, data = result.Data });
-                    }
-                    else
-                    {
-                        return Json(new { success = false, message = $"Error {result?.Message ?? "Error desconocido al confirmar la eliminación"}" });
-                    }
-                }
+                return Json(new { success = false, message = idError });
             }
-            catch (Exception ex)
+
+            var result = await _usuarioApiService.DeleteAsync(id);
+
+            if (ErrorHelper.IsSuccess(result, out string? errorMessage))
             {
-                return Json(new { success = false, message = $"Error al consumir la API: {ex.Message}" });
+                return Json(new { success = true, message = result.Message ?? SuccessMessages.GetDeletedMessage("Usuario"), data = result.Data });
             }
-        }
 
-        private async Task<List<UsuarioDTO>> GetUsuariosAsync()
-        {
-            try
-            {
-                using (_usuarioClient.client)
-                {
-                    var response = await _usuarioClient.Index();
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {response.StatusCode}";
-                        return new List<UsuarioDTO>();
-                    }
-
-                    var responseString = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<OperationResult<List<UsuarioDTO>>>(responseString, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        TempData["Success"] = result.Message;
-                        return result.Data ?? new List<UsuarioDTO>();
-                    }
-
-                    TempData["Error"] = result?.Message ?? "Error al obtener los usuarios";
-                    return new List<UsuarioDTO>();
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return new List<UsuarioDTO>();
-            }
+            return Json(new { success = false, message = errorMessage });
         }
     }
 }

@@ -79,43 +79,22 @@ namespace SGHR.Persistence.Repositories.Configuration
 
         public override async Task<OperationResult<bool>> DeleteEntityAsync(Categoria entity)
         {
-            var result = new OperationResult<bool>();
             try
             {
-                if (entity == null)
-                {
-                    _logger.LogWarning("Intento de eliminar categoría nula.");
-                    return OperationResult<bool>.Fail("La categoría no puede ser nula.");
-                }
+                var result = await base.DeleteEntityAsync(entity);
 
-                var trackedEntity = await _context.Categorias.FindAsync(entity.Id);
-                if (trackedEntity == null)
-                {
-                    _logger.LogWarning("Categoría con ID {Id} no encontrada para eliminar.", entity.Id);
-                    return OperationResult<bool>.Fail("La categoría no existe.");
-                }
+                if (result.Success)
+                    _logger.LogInformation("Categoría eliminada correctamente: {Nombre} (Id: {Id})", entity.Nombre, entity.Id);
+                else
+                    _logger.LogWarning("Error al eliminar categoría: {Mensaje}", result.Message);
 
-                trackedEntity.IsDeleted = true;
-                trackedEntity.Estado = false;
-                trackedEntity.FechaEliminacion = DateTime.UtcNow;
-
-                _context.Categorias.Update(trackedEntity);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Categoría eliminada correctamente: {Nombre} (Id: {Id})", trackedEntity.Nombre, trackedEntity.Id);
-
-                result.Data = true;
-                result.Success = true;
-                result.Message = "Categoría eliminada correctamente.";
+                return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar categoría con ID {Id}.", entity?.Id);
-                result.Data = false;
-                result.Success = false;
-                result.Message = $"Error al eliminar la categoría: {ex.Message}";
+                _logger.LogError(ex, "Error interno al eliminar categoría.");
+                return OperationResult<bool>.Fail("Error interno al eliminar la categoría.");
             }
-            return result;
         }
     }
 }

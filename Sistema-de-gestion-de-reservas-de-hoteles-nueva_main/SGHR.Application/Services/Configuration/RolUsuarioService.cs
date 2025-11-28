@@ -19,14 +19,13 @@ namespace SGHR.Application.Services.Configuration
             _repository = repository;
         }
 
-        public async Task<OperationResult<List<RolUsuarioDTO>>> GetAllAsync() =>
-            await ExecuteOperationAsync(async () =>
-            {
-                var roles = await _repository.GetAllAsync();
-                var dtoList = roles.Where(r => !r.IsDeleted)
-                            .Select(RolUsuarioMapper.ToRolUsuarioDto).ToList();
-                return OperationResult<List<RolUsuarioDTO>>.Ok(dtoList);
-            }, "Error al obtener los roles.");
+        public async Task<OperationResult<List<RolUsuarioDTO>>> GetAllAsync()
+        {
+            return await GetAllEntitiesAsync<RolUsuario, RolUsuarioDTO>(
+                _repository.GetAllAsync,
+                RolUsuarioMapper.ToRolUsuarioDto,
+                "Roles de Usuario");
+        }
 
         public async Task<OperationResult<RolUsuarioDTO>> GetByIdAsync(int id) =>
             await ExecuteOperationAsync(async () =>
@@ -61,12 +60,10 @@ namespace SGHR.Application.Services.Configuration
                 if (existing == null)
                     return OperationResult<RolUsuarioDTO>.Fail("El rol no existe.");
 
-                if (await _repository.ExistsAsync(r => r.Nombre == dto.Nombre && r.Id != dto.Id))
+                if (await _repository.ExistsAsync(r => r.Nombre == dto.Nombre && r.Id != dto.Id && !r.IsDeleted))
                     return OperationResult<RolUsuarioDTO>.Fail("Ya existe otro rol con ese nombre.");
 
-                existing.Nombre = dto.Nombre.Trim();
-                existing.Descripcion = dto.Descripcion?.Trim();
-                existing.IsDeleted = !dto.Estado;
+                RolUsuarioMapper.UpdateRolUsuarioFromDto(existing, dto, usuario: "sistema");
 
                 var result = await _repository.UpdateEntityAsync(existing);
                 if (!result.Success)

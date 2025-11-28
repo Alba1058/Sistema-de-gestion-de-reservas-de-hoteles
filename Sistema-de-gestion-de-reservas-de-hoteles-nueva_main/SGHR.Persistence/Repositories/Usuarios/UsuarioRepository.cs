@@ -22,21 +22,6 @@ namespace SGHR.Persistence.Repositories.Usuarios
 
         public override async Task<OperationResult<Usuario>> SaveEntityAsync(Usuario entity)
         {
-            var operationResult = new OperationResult<Usuario>();
-
-            // Validaciones
-            if (entity == null)
-                return OperationResult<Usuario>.Fail("El objeto usuario no puede ser nulo.");
-
-            if (string.IsNullOrWhiteSpace(entity.Nombre))
-                return OperationResult<Usuario>.Fail("El nombre del usuario no puede estar vacío.");
-
-            if (string.IsNullOrWhiteSpace(entity.Email))
-                return OperationResult<Usuario>.Fail("El correo electrónico no puede estar vacío.");
-
-            if (await _context.Usuarios.AnyAsync(u => u.Email == entity.Email && !u.IsDeleted))
-                return OperationResult<Usuario>.Fail("Ya existe un usuario con ese correo electrónico.");
-
             try
             {
                 var result = await base.SaveEntityAsync(entity);
@@ -50,59 +35,49 @@ namespace SGHR.Persistence.Repositories.Usuarios
                         .AsNoTracking() 
                         .FirstOrDefaultAsync(u => u.Id == entity.Id);
 
-                    operationResult = OperationResult<Usuario>.Ok(savedEntityWithRol ?? entity, "Usuario guardado correctamente.");
+                    return OperationResult<Usuario>.Ok(savedEntityWithRol ?? entity, "Usuario guardado correctamente.");
                 }
                 else
                 {
                     _logger.LogWarning("Error al guardar usuario: {Mensaje}", result.Message);
-                    operationResult = OperationResult<Usuario>.Fail(result.Message);
+                    return result;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error interno al guardar el usuario");
-                operationResult = OperationResult<Usuario>.Fail("Error interno al guardar el usuario.");
+                return OperationResult<Usuario>.Fail("Error interno al guardar el usuario.");
             }
-
-            return operationResult;
         }
 
         public override async Task<OperationResult<Usuario>> UpdateEntityAsync(Usuario entity)
         {
-            var operationResult = new OperationResult<Usuario>();
-
             try
             {
-                var existing = await _context.Usuarios.FindAsync(entity.Id);
-                if (existing == null)
-                    return OperationResult<Usuario>.Fail("Usuario no encontrado.");
+                var result = await base.UpdateEntityAsync(entity);
 
-                if (await _context.Usuarios.AnyAsync(u => u.Email == entity.Email && u.Id != entity.Id && !u.IsDeleted))
-                    return OperationResult<Usuario>.Fail("Ya existe otro usuario con ese correo electrónico.");
+                if (result.Success)
+                {
+                    _logger.LogInformation("Usuario {Email} actualizado correctamente con ID {Id}", entity.Email, entity.Id);
 
-                // Asignaciones
-                existing.Nombre = entity.Nombre;
-                existing.Email = entity.Email;
-                existing.RolUsuarioId = entity.RolUsuarioId;
-                existing.UsuarioModificacion = entity.UsuarioModificacion;
+                    var updatedEntityWithRol = await _context.Usuarios
+                        .Include(u => u.RolUsuario)
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.Id == entity.Id);
 
-                existing.FechaModificacion = entity.FechaModificacion;
-                existing.IsDeleted = entity.IsDeleted;
-                existing.Estado = entity.Estado; 
-
-                _context.Usuarios.Update(existing);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Usuario {Email} actualizado correctamente con ID {Id}", existing.Email, existing.Id);
-                operationResult = OperationResult<Usuario>.Ok(existing, "Usuario actualizado correctamente.");
+                    return OperationResult<Usuario>.Ok(updatedEntityWithRol ?? entity, "Usuario actualizado correctamente.");
+                }
+                else
+                {
+                    _logger.LogWarning("Error al actualizar usuario: {Mensaje}", result.Message);
+                    return result;
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al actualizar usuario");
-                operationResult = OperationResult<Usuario>.Fail("Error interno al actualizar el usuario.");
+                return OperationResult<Usuario>.Fail("Error interno al actualizar el usuario.");
             }
-
-            return operationResult;
         }
 
         public async Task<Usuario?> GetUsuarioByCorreoAsync(string correo)

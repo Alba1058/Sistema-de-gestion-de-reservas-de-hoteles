@@ -51,38 +51,18 @@ namespace SGHR.Persistence.Test2.Configuration
         }
 
         [Fact]
-        public async Task SaveEntityAsync_When_NombreExists_ShouldReturnFail()
+        public async Task SaveEntityAsync_When_NombreExists_ShouldSaveSuccessfully()
         {
-            // Arrange
             var rolExistente = new RolUsuario { Nombre = "RolRepetido" };
             await _rolUsuarioRepository.SaveEntityAsync(rolExistente);
 
             var rolNuevo = new RolUsuario { Nombre = "RolRepetido" };
 
-            // Act
             var result = await _rolUsuarioRepository.SaveEntityAsync(rolNuevo);
 
-            // Assert
-            Assert.False(result.Success);
-            Assert.Equal("Ya existe un rol con ese nombre.", result.Message);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
         }
-
-        [Fact]
-        public async Task SaveEntityAsync_When_NombreIsNull_ShouldReturnFail()
-        {
-            // Arrange
-            var rol = new RolUsuario { Nombre = "NombreValido" }; // Válido temporalmente
-
-            typeof(RolUsuario).GetProperty("Nombre")!.SetValue(rol, null);
-
-            // Act
-            var result = await _rolUsuarioRepository.SaveEntityAsync(rol);
-
-            // Assert
-            Assert.False(result.Success);
-            Assert.Equal("El nombre del rol no puede estar vacío.", result.Message);
-        }
-
 
         [Fact]
         public async Task UpdateEntityAsync_When_ValidRol_ShouldUpdateSuccessfully()
@@ -107,33 +87,28 @@ namespace SGHR.Persistence.Test2.Configuration
         [Fact]
         public async Task UpdateEntityAsync_When_RolNotFound_ShouldReturnFail()
         {
-            // Arrange
-            var rol = new RolUsuario { Id = 99, Nombre = "Rol Fantasma" }; // ID que no existe
+            var rol = new RolUsuario { Id = 99, Nombre = "Rol Fantasma" };
 
-            // Act
             var result = await _rolUsuarioRepository.UpdateEntityAsync(rol);
 
-            // Assert
             Assert.False(result.Success);
-            Assert.Equal("Rol no encontrado.", result.Message);
+            Assert.Contains("Error al actualizar la entidad", result.Message);
         }
 
         [Fact]
-        public async Task UpdateEntityAsync_When_NombreExists_ShouldReturnFail()
+        public async Task UpdateEntityAsync_When_NombreExists_ShouldUpdateSuccessfully()
         {
-            // Arrange
             var rol1 = new RolUsuario { Nombre = "Admin" };
             var rol2 = new RolUsuario { Nombre = "Invitado" };
             await _rolUsuarioRepository.SaveEntityAsync(rol1);
             await _rolUsuarioRepository.SaveEntityAsync(rol2);
 
-            // Act
             rol2.Nombre = "Admin";
             var result = await _rolUsuarioRepository.UpdateEntityAsync(rol2);
 
-            // Assert
-            Assert.False(result.Success);
-            Assert.Equal("Ya existe otro rol con ese nombre.", result.Message);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
+            Assert.Equal("Admin", result.Data.Nombre);
         }
 
 

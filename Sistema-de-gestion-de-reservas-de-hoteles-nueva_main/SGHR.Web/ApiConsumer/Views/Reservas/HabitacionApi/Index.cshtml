@@ -8,7 +8,7 @@
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-primary">
-            <i class="bi bi-house-door"></i> Gesti�n de Habitaciones
+            <i class="bi bi-house-door"></i> Gestión de Habitaciones
         </h2>
     </div>
 
@@ -29,7 +29,7 @@
 
     <div class="mb-3">
         <a href="@Url.Action("Create", "HabitacionApi")" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Nueva Habitaci�n
+            <i class="bi bi-plus-circle"></i> Nueva Habitación
         </a>
     </div>
 
@@ -40,7 +40,7 @@
 
 @Html.AntiForgeryToken()
 
-<div class="modal fade" id="deleteModal" tabindex="-1">
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content" id="deleteModalContent"></div>
     </div>
@@ -48,49 +48,164 @@
 
 @section Scripts {
     <script>
-        function loadHabitacionList() {
-            $.get('@Url.Action("_List", "HabitacionApi")', function (data) {
-                $("#habitacion-list-container").html(data);
-            });
-        }
-
-        function openDeleteModal(id) {
+        window.openDeleteModal = function(id) {
+            console.log('openDeleteModal llamado con id:', id);
+            if (!id || id <= 0) {
+                alert('ID de habitación inválido');
+                return;
+            }
+            
+            if (typeof $ === 'undefined') {
+                console.error('jQuery no está disponible');
+                alert('Error: jQuery no está cargado');
+                return;
+            }
+            
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap no está disponible');
+                alert('Error: Bootstrap no está cargado');
+                return;
+            }
+            
             $.get('@Url.Action("_Delete", "HabitacionApi")', { id: id })
                 .done(function (html) {
+                    console.log('Modal cargado correctamente');
                     $("#deleteModalContent").html(html);
-                    $("#deleteModal").modal("show");
+                    var modalElement = document.getElementById('deleteModal');
+                    if (!modalElement) {
+                        console.error('No se encontró el elemento deleteModal');
+                        alert('Error: No se encontró el modal');
+                        return;
+                    }
+                    var existingModal = bootstrap.Modal.getInstance(modalElement);
+                    if (existingModal) {
+                        existingModal.dispose();
+                    }
+                    var modal = new bootstrap.Modal(modalElement);
+                    modal.show();
                 })
                 .fail(function (xhr, status, error) {
-                    alert('Error al cargar el modal de eliminaci�n: ' + (xhr.responseJSON?.message || error));
+                    console.error('Error al cargar modal:', error, xhr);
+                    alert('Error al cargar el modal de eliminación: ' + (xhr.responseJSON?.message || error));
                 });
-        }
-        function deleteConfirmed(id) {
+        };
+        
+        window.deleteConfirmed = function(id) {
+            console.log('deleteConfirmed llamado con id:', id);
             var token = $('input[name="__RequestVerificationToken"]').first().val();
+            
+            if (!token) {
+                token = $('#deleteModalContent input[name="__RequestVerificationToken"]').first().val();
+            }
             
             if (!token) {
                 alert('Error: No se pudo obtener el token de seguridad. Por favor, recargue la página.');
                 return;
             }
             
-            $.post('@Url.Action("_DeleteConfirmed", "HabitacionApi")',
-                { id: id, __RequestVerificationToken: token })
-                .done(function (response) {
-                    $("#deleteModal").modal("hide");
+            $.ajax({
+                url: '@Url.Action("_DeleteConfirmed", "HabitacionApi")',
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                data: { 
+                    id: id, 
+                    __RequestVerificationToken: token 
+                },
+                success: function (response) {
+                    var modalElement = document.getElementById('deleteModal');
+                    var modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
                     if (response && response.success) {
-                        alert(response.message || 'Habitaci�n eliminada correctamente');
+                        alert(response.message || 'Habitación eliminada correctamente');
                         loadHabitacionList();
                     } else {
-                        alert(response?.message || 'Error desconocido al eliminar la habitaci�n.');
+                        alert(response?.message || 'Error desconocido al eliminar la habitación.');
                     }
-                })
-                .fail(function (xhr, status, error) {
-                    alert('Error en la solicitud de eliminaci�n: ' + error);
+                },
+                error: function (xhr, status, error) {
+                    var modalElement = document.getElementById('deleteModal');
+                    var modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                    var errorMessage = 'Error en la solicitud de eliminación: ';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage += xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        try {
+                            var errorObj = JSON.parse(xhr.responseText);
+                            errorMessage += errorObj.message || error;
+                        } catch (e) {
+                            errorMessage += error;
+                        }
+                    } else {
+                        errorMessage += error;
+                    }
+                    alert(errorMessage);
+                }
+            });
+        };
+        
+        function loadHabitacionList() {
+            try {
+                $.get('@Url.Action("_List", "HabitacionApi")', function (data) {
+                    $("#habitacion-list-container").html(data);
+                }).fail(function(xhr, status, error) {
+                    console.error('Error al cargar la lista de habitaciones:', error);
+                    alert('Error al cargar la lista de habitaciones. Por favor, recargue la página.');
                 });
+            } catch (error) {
+                console.error('Error en loadHabitacionList:', error);
+                alert('Error al cargar la lista de habitaciones.');
+            }
         }
 
         $(document).ready(function() {
-            if (@Html.Raw(Model == null ? "true" : "false")) {
-                loadHabitacionList();
+            try {
+                console.log('=== INICIO SCRIPT HABITACIONES ===');
+                console.log('jQuery disponible:', typeof $ !== 'undefined');
+                console.log('Bootstrap disponible:', typeof bootstrap !== 'undefined');
+                console.log('openDeleteModal disponible:', typeof window.openDeleteModal === 'function');
+                
+                if (typeof $ === 'undefined') {
+                    console.error('jQuery no está disponible');
+                    alert('Error: jQuery no está cargado. Por favor, recargue la página.');
+                    return;
+                }
+                
+                if (typeof bootstrap === 'undefined') {
+                    console.error('Bootstrap no está disponible');
+                    alert('Error: Bootstrap no está cargado. Por favor, recargue la página.');
+                    return;
+                }
+                
+                $(document).on('click', '.btn-delete-habitacion', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var id = $(this).data('habitacion-id');
+                    console.log('Botón eliminar clickeado (delegation), ID:', id);
+                    if (id && typeof window.openDeleteModal === 'function') {
+                        window.openDeleteModal(id);
+                    } else {
+                        console.error('ID no válido o función no disponible. ID:', id, 'Función disponible:', typeof window.openDeleteModal);
+                        alert('Error: No se pudo obtener el ID o la función no está disponible');
+                    }
+                });
+                
+                var hasData = @Html.Raw(Model != null && Model.Any() ? "true" : "false");
+                if (!hasData) {
+                    console.log('No hay datos en el modelo, cargando lista...');
+                    loadHabitacionList();
+                } else {
+                    console.log('Datos ya cargados en el modelo');
+                }
+                console.log('=== FIN SCRIPT HABITACIONES ===');
+            } catch (error) {
+                console.error('Error en document.ready:', error);
+                alert('Error al inicializar la página. Por favor, recargue la página.');
             }
         });
     </script>

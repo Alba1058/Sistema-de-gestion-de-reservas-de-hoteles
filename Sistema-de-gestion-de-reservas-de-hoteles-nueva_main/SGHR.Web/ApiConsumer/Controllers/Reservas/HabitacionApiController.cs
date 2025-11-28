@@ -1,192 +1,225 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SGHR.Application.DTOs.Reservas.Habitacion;
 using SGHR.Domain.Base;
-using System.Text;
-using System.Text.Json;
+using SGHR.Web.Infrastructure.Services.Api.Interfaces;
+using SGHR.Web.ViewModels.Reservas;
+using SGHR.Web.Helpers;
+using System.Net.Http;
+using SGHR.Application.DTOs.Configuration.Categoria;
+using SGHR.Application.DTOs.Configuration.Piso;
 
 namespace SGHR.Web.ApiConsumer.Controllers.Reservas
 {
     public class HabitacionApiController : Controller
     {
         private readonly ILogger<HabitacionApiController> _logger;
-        private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        private readonly IHabitacionApiService _habitacionApiService;
+        private readonly ICategoriaApiService _categoriaApiService;
+        private readonly IPisoApiService _pisoApiService;
 
-        private const string BaseApiAddress = "http://localhost:5066/api/";
-
-        public HabitacionApiController(ILogger<HabitacionApiController> logger)
+        public HabitacionApiController(
+            IHabitacionApiService habitacionApiService,
+            ICategoriaApiService categoriaApiService,
+            IPisoApiService pisoApiService,
+            ILogger<HabitacionApiController> logger)
         {
-            _logger = logger;
+            _habitacionApiService = habitacionApiService ?? throw new ArgumentNullException(nameof(habitacionApiService));
+            _categoriaApiService = categoriaApiService ?? throw new ArgumentNullException(nameof(categoriaApiService));
+            _pisoApiService = pisoApiService ?? throw new ArgumentNullException(nameof(pisoApiService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IActionResult> Index()
         {
-            var habitaciones = await GetHabitacionesAsync();
-            return View(habitaciones);
+            try
+            {
+                var result = await _habitacionApiService.GetAllAsync();
+                var habitaciones = result?.Data ?? new List<HabitacionDTO>();
+                return View(habitaciones);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener la lista de habitaciones");
+                TempData["Error"] = "Error al cargar las habitaciones";
+                return View(new List<HabitacionDTO>());
+            }
         }
 
         public async Task<IActionResult> _List()
         {
-            OperationResult<List<HabitacionDTO>> result = null; 
             try
             {
-                using (var httpclient = new HttpClient()) 
+                var result = await _habitacionApiService.GetAllAsync();
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage))
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress); 
-                    var endpoint = await httpclient.GetAsync("Habitacion");
-
-                    if (endpoint.IsSuccessStatusCode)
-                    {
-                        var responseString = await endpoint.Content.ReadAsStringAsync();
-                        result = JsonSerializer.Deserialize<OperationResult<List<HabitacionDTO>>>(responseString, _jsonSerializerOptions);
-
-                        if (result != null && result.Success)
-                        {
-                            TempData["Success"] = result.Message;
-                            return PartialView("_List", result.Data ?? new List<HabitacionDTO>());
-                        }
-                        else
-                        {
-                            TempData["Error"] = result?.Message ?? "Error al obtener las habitaciones";
-                            return PartialView("_List", new List<HabitacionDTO>());
-                        }
-                    }
-                    else
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return PartialView("_List", new List<HabitacionDTO>());
-                    }
+                    TempData["Success"] = result.Message ?? SuccessMessages.Loaded;
+                    return PartialView("_List", result.Data ?? new List<HabitacionDTO>());
                 }
+
+                TempData["Error"] = errorMessage;
+                return PartialView("_List", new List<HabitacionDTO>());
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                _logger.LogError(ex, "Error al obtener la lista de habitaciones (partial)");
+                TempData["Error"] = "Error al cargar las habitaciones";
                 return PartialView("_List", new List<HabitacionDTO>());
             }
         }
+
         public async Task<IActionResult> Details(int id)
         {
-            OperationResult<HabitacionDTO> result = null; 
+            if (!ErrorHelper.IsValidId(id, out string? idError))
+            {
+                TempData["Error"] = idError;
+                return RedirectToAction("Index");
+            }
+
             try
             {
-                using (var httpclient = new HttpClient())
+                var result = await _habitacionApiService.GetByIdAsync(id);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"Habitacion/{id}");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<HabitacionDTO>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success && result.Data != null)
-                    {
-                        TempData["Success"] = result.Message;
-                        return View(result.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = result?.Message ?? "Error desconocido al obtener detalles.";
-                        return RedirectToAction("Index");
-                    }
+                    TempData["Success"] = result.Message;
+                    return View(result.Data);
                 }
+
+                TempData["Error"] = errorMessage;
+                return RedirectToAction("Index");
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogWarning(ex, "Habitación no encontrada - ID: {Id}", id);
+                TempData["Error"] = "La habitación solicitada no fue encontrada";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                _logger.LogError(ex, "Error al obtener detalles de habitación - ID: {Id}", id);
+                TempData["Error"] = "Error al cargar los detalles de la habitación";
                 return RedirectToAction("Index");
             }
         }
 
-
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            TempData.Remove("Success");
-            TempData.Remove("Error");
-            var model = new CreateHabitacionDTO();
-            return View(model);
+            try
+            {
+                TempData.Remove("Success");
+                TempData.Remove("Error");
+
+                var categoriasResult = await _categoriaApiService.GetAllAsync();
+                var pisosResult = await _pisoApiService.GetAllAsync();
+
+                var viewModel = new CreateHabitacionViewModel
+                {
+                    Categorias = categoriasResult?.Data ?? new(),
+                    Pisos = pisosResult?.Data ?? new()
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cargar datos para crear habitación");
+                TempData["Error"] = "Error al cargar los datos necesarios";
+                return RedirectToAction("Index");
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateHabitacionDTO model)
+        public async Task<IActionResult> Create(CreateHabitacionViewModel viewModel)
         {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            OperationResult<HabitacionDTO> resultHabitacion = null; 
             try
             {
-                using (var httpclient = new HttpClient())
+                if (viewModel?.Habitacion == null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var json = JsonSerializer.Serialize(model);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var endpointCreate = await httpclient.PostAsync("Habitacion", content);
-
-                    if (!endpointCreate.IsSuccessStatusCode)
-                    {
-                        var errorContent = await endpointCreate.Content.ReadAsStringAsync();
-                        var errorResult = JsonSerializer.Deserialize<OperationResult<HabitacionDTO>>(errorContent, _jsonSerializerOptions);
-
-                        TempData["Error"] = errorResult?.Message ?? $"Error al crear la habitación (Código: {endpointCreate.StatusCode})";
-                        return View(model);
-                    }
-
-                    var responseContent = await endpointCreate.Content.ReadAsStringAsync();
-                    resultHabitacion = JsonSerializer.Deserialize<OperationResult<HabitacionDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultHabitacion != null && resultHabitacion.Success)
-                    {
-                        TempData["Success"] = resultHabitacion.Message ?? "Habitación creada exitosamente";
-                        return RedirectToAction("Index"); 
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultHabitacion?.Message ?? "Error al crear la habitación";
-                        return View(model);
-                    }
+                    _logger.LogError("El modelo recibido es null");
+                    TempData["Error"] = "El modelo recibido es nulo";
+                    return await Create();
                 }
+
+                var model = viewModel.Habitacion;
+
+                if (!ModelState.IsValid)
+                {
+                    var categoriasResult = await _categoriaApiService.GetAllAsync();
+                    var pisosResult = await _pisoApiService.GetAllAsync();
+                    viewModel.Categorias = categoriasResult?.Data ?? new();
+                    viewModel.Pisos = pisosResult?.Data ?? new();
+                    return View(viewModel);
+                }
+
+
+                var result = await _habitacionApiService.CreateAsync(model);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage))
+                {
+                    TempData["Success"] = result.Message ?? SuccessMessages.GetCreatedMessage("Habitación");
+                    return RedirectToAction("Index");
+                }
+
+                TempData["Error"] = errorMessage;
+                
+                var categoriasResult2 = await _categoriaApiService.GetAllAsync();
+                var pisosResult2 = await _pisoApiService.GetAllAsync();
+                viewModel.Categorias = categoriasResult2?.Data ?? new();
+                viewModel.Pisos = pisosResult2?.Data ?? new();
+                return View(viewModel);
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogError(ex, "Recurso no encontrado al crear habitación");
+                TempData["Error"] = "El recurso solicitado no fue encontrado";
+                return await Create();
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("500"))
+            {
+                _logger.LogError(ex, "Error del servidor al crear habitación");
+                TempData["Error"] = "Error interno del servidor. Por favor, intente más tarde";
+                return await Create();
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Timeout al crear habitación");
+                TempData["Error"] = "La operación tardó demasiado. Por favor, intente nuevamente";
+                return await Create();
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
+                _logger.LogError(ex, "Error inesperado al crear habitación");
+                TempData["Error"] = "Ocurrió un error inesperado. Por favor, contacte al administrador";
+                return await Create();
             }
         }
 
+
+        [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            OperationResult<HabitacionDTO> resultHabitacion = null;
+            if (!ErrorHelper.IsValidId(id, out string? idError))
+            {
+                TempData["Error"] = idError;
+                return RedirectToAction("Index");
+            }
+
             try
             {
-                using (var httpclient = new HttpClient())
+                var result = await _habitacionApiService.GetByIdAsync(id);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
+                    var habitacion = result.Data;
+                    
+                    var categoriasResult = await _categoriaApiService.GetAllAsync();
+                    var pisosResult = await _pisoApiService.GetAllAsync();
 
-                    var endpoint = await httpclient.GetAsync($"Habitacion/{id}");
-
-                    if (!endpoint.IsSuccessStatusCode)
+                    var viewModel = new EditHabitacionViewModel
                     {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    resultHabitacion = JsonSerializer.Deserialize<OperationResult<HabitacionDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultHabitacion != null && resultHabitacion.Success && resultHabitacion.Data != null)
-                    {
-                        var habitacion = resultHabitacion.Data;
-                        var updateDto = new UpdateHabitacionDTO
+                        Habitacion = new UpdateHabitacionDTO
                         {
                             Id = habitacion.Id,
                             Numero = habitacion.Numero,
@@ -196,110 +229,128 @@ namespace SGHR.Web.ApiConsumer.Controllers.Reservas
                             PrecioBase = habitacion.PrecioBase,
                             Descripcion = habitacion.Descripcion,
                             Estado = habitacion.Estado
-                        };
+                        },
+                        Categorias = categoriasResult?.Data ?? new(),
+                        Pisos = pisosResult?.Data ?? new()
+                    };
 
-                        TempData["Success"] = resultHabitacion.Message;
-                        return View(updateDto);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultHabitacion?.Message ?? "Error desconocido al preparar la edición.";
-                        return RedirectToAction("Index");
-                    }
+                    TempData["Success"] = result.Message;
+                    return View(viewModel);
                 }
+
+                TempData["Error"] = errorMessage;
+                return RedirectToAction("Index");
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogWarning(ex, "Habitación no encontrada para editar - ID: {Id}", id);
+                TempData["Error"] = "La habitación solicitada no fue encontrada";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
+                _logger.LogError(ex, "Error al preparar edición de habitación - ID: {Id}", id);
+                TempData["Error"] = "Error al cargar los datos para editar";
                 return RedirectToAction("Index");
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(UpdateHabitacionDTO model)
+        public async Task<IActionResult> Edit(EditHabitacionViewModel viewModel)
         {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            OperationResult<HabitacionDTO> resultHabitacion = null; 
             try
             {
-                using (var httpclient = new HttpClient())
+                if (viewModel?.Habitacion == null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var json = JsonSerializer.Serialize(model);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var endpointEdit = await httpclient.PutAsync("Habitacion", content);
-
-                    if (!endpointEdit.IsSuccessStatusCode)
-                    {
-                        var errorContent = await endpointEdit.Content.ReadAsStringAsync();
-                        var errorResult = JsonSerializer.Deserialize<OperationResult<HabitacionDTO>>(errorContent, _jsonSerializerOptions);
-
-                        TempData["Error"] = errorResult?.Message ?? $"Error al actualizar la habitación (Código: {endpointEdit.StatusCode})";
-                        return View(model);
-                    }
-
-                    var responseContent = await endpointEdit.Content.ReadAsStringAsync();
-                    resultHabitacion = JsonSerializer.Deserialize<OperationResult<HabitacionDTO>>(responseContent, _jsonSerializerOptions);
-
-                    if (resultHabitacion != null && resultHabitacion.Success)
-                    {
-                        TempData["Success"] = resultHabitacion.Message ?? "Habitación actualizada exitosamente";
-                        return RedirectToAction("Index"); 
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultHabitacion?.Message ?? "Error al actualizar la habitación";
-                        return View(model);
-                    }
+                    _logger.LogError("El modelo recibido es null");
+                    TempData["Error"] = "El modelo recibido es nulo";
+                    return RedirectToAction("Index");
                 }
+
+                var model = viewModel.Habitacion;
+
+                if (!ErrorHelper.IsValidId(model.Id, out string? idError))
+                {
+                    TempData["Error"] = idError;
+                    return RedirectToAction("Index");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    var categoriasResult = await _categoriaApiService.GetAllAsync();
+                    var pisosResult = await _pisoApiService.GetAllAsync();
+                    viewModel.Categorias = categoriasResult?.Data ?? new();
+                    viewModel.Pisos = pisosResult?.Data ?? new();
+                    return View(viewModel);
+                }
+
+
+                var result = await _habitacionApiService.UpdateAsync(model);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage))
+                {
+                    TempData["Success"] = result.Message ?? SuccessMessages.GetUpdatedMessage("Habitación");
+                    return RedirectToAction("Index");
+                }
+
+                TempData["Error"] = errorMessage;
+                
+                var categoriasResult2 = await _categoriaApiService.GetAllAsync();
+                var pisosResult2 = await _pisoApiService.GetAllAsync();
+                viewModel.Categorias = categoriasResult2?.Data ?? new();
+                viewModel.Pisos = pisosResult2?.Data ?? new();
+                return View(viewModel);
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogError(ex, "Recurso no encontrado al editar habitación");
+                TempData["Error"] = "El recurso solicitado no fue encontrado";
+                return RedirectToAction("Index");
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("500"))
+            {
+                _logger.LogError(ex, "Error del servidor al editar habitación");
+                TempData["Error"] = "Error interno del servidor. Por favor, intente más tarde";
+                return RedirectToAction("Index");
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Timeout al editar habitación");
+                TempData["Error"] = "La operación tardó demasiado. Por favor, intente nuevamente";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return View(model);
+                _logger.LogError(ex, "Error inesperado al editar habitación");
+                TempData["Error"] = "Ocurrió un error inesperado. Por favor, contacte al administrador";
+                return RedirectToAction("Index");
             }
         }
 
+        [HttpGet]
         public async Task<IActionResult> _Delete(int id)
         {
-            OperationResult<HabitacionDTO> resultHabitacion = null; 
+            if (!ErrorHelper.IsValidId(id, out string? idError))
+            {
+                return PartialView("_Delete", (HabitacionDTO?)null);
+            }
+
             try
             {
-                using (var httpclient = new HttpClient())
+                var result = await _habitacionApiService.GetByIdAsync(id);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage) && result.Data != null)
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpoint = await httpclient.GetAsync($"Habitacion/{id}");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return RedirectToAction("Index");
-                    }
-
-                    var content = await endpoint.Content.ReadAsStringAsync();
-                    resultHabitacion = JsonSerializer.Deserialize<OperationResult<HabitacionDTO>>(content, _jsonSerializerOptions);
-
-                    if (resultHabitacion != null && resultHabitacion.Success && resultHabitacion.Data != null)
-                    {
-                        TempData["Success"] = resultHabitacion.Message;
-                        return PartialView("_Delete", resultHabitacion.Data);
-                    }
-                    else
-                    {
-                        TempData["Error"] = resultHabitacion?.Message ?? "Error desconocido al obtener la habitación para eliminar.";
-                        return RedirectToAction("Index");
-                    }
+                    return PartialView("_Delete", result.Data);
                 }
+
+                return PartialView("_Delete", (HabitacionDTO?)null);
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return RedirectToAction("Index");
+                _logger.LogError(ex, "Error al obtener habitación para eliminar - ID: {Id}", id);
+                return PartialView("_Delete", (HabitacionDTO?)null);
             }
         }
 
@@ -308,72 +359,31 @@ namespace SGHR.Web.ApiConsumer.Controllers.Reservas
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> _DeleteConfirmed(int id)
         {
-            OperationResult<bool> result = null; 
+            if (!ErrorHelper.IsValidId(id, out string? idError))
+            {
+                return Json(new { success = false, message = idError });
+            }
+
             try
             {
-                using (var httpclient = new HttpClient())
+                var result = await _habitacionApiService.DeleteAsync(id);
+
+                if (ErrorHelper.IsSuccess(result, out string? errorMessage))
                 {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-
-                    var endpointRemove = await httpclient.DeleteAsync($"Habitacion/{id}");
-
-                    if (!endpointRemove.IsSuccessStatusCode)
-                    {
-                        var errorContent = await endpointRemove.Content.ReadAsStringAsync();
-                        return Json(new { success = false, message = $"Error: {endpointRemove.StatusCode}. Detalles: {errorContent}" });
-                    }
-
-                    var content = await endpointRemove.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<OperationResult<bool>>(content, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        return Json(new { success = true, message = result.Message, data = result.Data });
-                    }
-                    else
-                    {
-                        return Json(new { success = false, message = $"Error {result?.Message ?? "Error desconocido al confirmar la eliminación"}" });
-                    }
+                    return Json(new { success = true, message = result.Message ?? SuccessMessages.GetDeletedMessage("Habitación"), data = result.Data });
                 }
+
+                return Json(new { success = false, message = errorMessage });
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("404"))
+            {
+                _logger.LogWarning(ex, "Habitación no encontrada para eliminar - ID: {Id}", id);
+                return Json(new { success = false, message = "La habitación solicitada no fue encontrada" });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"Error al consumir la API: {ex.Message}" });
-            }
-        }
-
-        private async Task<List<HabitacionDTO>> GetHabitacionesAsync()
-        {
-            try
-            {
-                using (var httpclient = new HttpClient())
-                {
-                    httpclient.BaseAddress = new Uri(BaseApiAddress);
-                    var endpoint = await httpclient.GetAsync("Habitacion");
-
-                    if (!endpoint.IsSuccessStatusCode)
-                    {
-                        TempData["Error"] = $"Error al consumir la API: {endpoint.StatusCode}";
-                        return new List<HabitacionDTO>();
-                    }
-
-                    var responseString = await endpoint.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<OperationResult<List<HabitacionDTO>>>(responseString, _jsonSerializerOptions);
-
-                    if (result != null && result.Success)
-                    {
-                        TempData["Success"] = result.Message;
-                        return result.Data ?? new List<HabitacionDTO>();
-                    }
-
-                    TempData["Error"] = result?.Message ?? "Error al obtener las habitaciones";
-                    return new List<HabitacionDTO>();
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Error al consumir la API: {ex.Message}";
-                return new List<HabitacionDTO>();
+                _logger.LogError(ex, "Error inesperado al eliminar habitación - ID: {Id}", id);
+                return Json(new { success = false, message = "Ocurrió un error inesperado al eliminar la habitación" });
             }
         }
     }

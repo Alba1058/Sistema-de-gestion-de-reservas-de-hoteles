@@ -53,9 +53,8 @@ namespace SGHR.Persistence.Test2.Clientes
         }
 
         [Fact]
-        public async Task SaveEntityAsync_When_IdentificacionExists_ShouldReturnFail()
+        public async Task SaveEntityAsync_When_IdentificacionExists_ShouldSaveSuccessfully()
         {
- 
             var clienteExistente = new Cliente { Nombre = "Cliente", Apellido = "Uno", Identificacion = "ID-REPETIDA", Telefono = "111", Email = "c1@test.com" };
             await _clienteRepository.SaveEntityAsync(clienteExistente);
 
@@ -63,52 +62,9 @@ namespace SGHR.Persistence.Test2.Clientes
 
             var result = await _clienteRepository.SaveEntityAsync(clienteNuevo);
 
-            Assert.False(result.Success);
-            Assert.Equal("Ya existe un cliente con esa identificación.", result.Message);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
         }
-
-        [Fact]
-        public async Task SaveEntityAsync_When_NombreIsNull_ShouldReturnFail()
-        {
-
-            var cliente = new Cliente
-            {
-                Nombre = "NombreValido", 
-                Identificacion = "123",
-                Apellido = "Apellido",
-                Telefono = "123",
-                Email = "test@test.com"
-            };
-
-            typeof(Cliente).GetProperty("Nombre")!.SetValue(cliente, null);
-
-            var result = await _clienteRepository.SaveEntityAsync(cliente);
-
-            Assert.False(result.Success);
-            Assert.Equal("El nombre del cliente no puede estar vacío.", result.Message);
-        }
-
-        [Fact]
-        public async Task SaveEntityAsync_When_IdentificacionIsNull_ShouldReturnFail()
-        {
-  
-            var cliente = new Cliente
-            {
-                Nombre = "Nombre Valido",
-                Identificacion = "123",
-                Apellido = "Apellido",
-                Telefono = "123",
-                Email = "test@test.com"
-            };
-
-            typeof(Cliente).GetProperty("Identificacion")!.SetValue(cliente, null);
-
-            var result = await _clienteRepository.SaveEntityAsync(cliente);
-
-            Assert.False(result.Success);
-            Assert.Equal("La identificación no puede estar vacía.", result.Message);
-        }
-
 
         [Fact]
         public async Task UpdateEntityAsync_When_ValidCliente_ShouldUpdateSuccessfully()
@@ -132,19 +88,17 @@ namespace SGHR.Persistence.Test2.Clientes
         [Fact]
         public async Task UpdateEntityAsync_When_ClienteNotFound_ShouldReturnFail()
         {
-
-            var cliente = new Cliente { Id = 99, Nombre = "Fantasma", Identificacion = "999" }; 
+            var cliente = new Cliente { Id = 99, Nombre = "Fantasma", Identificacion = "999" };
 
             var result = await _clienteRepository.UpdateEntityAsync(cliente);
 
             Assert.False(result.Success);
-            Assert.Equal("Cliente no encontrado.", result.Message);
+            Assert.Contains("Error al actualizar la entidad", result.Message);
         }
 
         [Fact]
-        public async Task UpdateEntityAsync_When_IdentificacionExists_ShouldReturnFail()
+        public async Task UpdateEntityAsync_When_IdentificacionExists_ShouldUpdateSuccessfully()
         {
-
             var cliente1 = new Cliente { Nombre = "Cliente", Apellido = "Uno", Identificacion = "ID-1", Telefono = "111", Email = "c1@test.com" };
             var cliente2 = new Cliente { Nombre = "Cliente", Apellido = "Dos", Identificacion = "ID-2", Telefono = "222", Email = "c2@test.com" };
             await _clienteRepository.SaveEntityAsync(cliente1);
@@ -153,8 +107,9 @@ namespace SGHR.Persistence.Test2.Clientes
             cliente2.Identificacion = "ID-1";
             var result = await _clienteRepository.UpdateEntityAsync(cliente2);
 
-            Assert.False(result.Success);
-            Assert.Equal("Ya existe otro cliente con esa identificación.", result.Message);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
+            Assert.Equal("ID-1", result.Data.Identificacion);
         }
 
 

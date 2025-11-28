@@ -99,15 +99,10 @@ namespace SGHR.Application.Services.Configuration
 
         public async Task<OperationResult<List<PisoDTO>>> GetAllAsync()
         {
-            return await ExecuteOperationAsync(async () =>
-            {
-                var pisos = await _repository.GetAllAsync();
-
-                var result = pisos.Where(p => !p.IsDeleted)
-                          .Select(PisoMapper.ToPisoDto).ToList();
-
-                return OperationResult<List<PisoDTO>>.Ok(result);
-            }, "Error al obtener los pisos.");
+            return await GetAllEntitiesAsync<Piso, PisoDTO>(
+                _repository.GetAllAsync,
+                PisoMapper.ToPisoDto,
+                "Pisos");
         }
 
         public async Task<OperationResult<PisoDTO>> GetByIdAsync(int id)

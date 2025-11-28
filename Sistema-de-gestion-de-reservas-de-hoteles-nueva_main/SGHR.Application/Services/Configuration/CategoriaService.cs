@@ -19,16 +19,13 @@ namespace SGHR.Application.Services.Configuration
             _repository = repository;
         }
 
-        public async Task<OperationResult<List<CategoriaDTO>>> GetAllAsync() =>
-            await ExecuteOperationAsync(async () =>
-            {
-                var categorias = await _repository.GetAllAsync();
-                var dtoList = categorias
-                    .Where(c => !c.IsDeleted)
-                    .Select(CategoriaMapper.ToCategoriaDto)
-                    .ToList();
-                return OperationResult<List<CategoriaDTO>>.Ok(dtoList);
-            }, "Error al obtener las categorías.");
+        public async Task<OperationResult<List<CategoriaDTO>>> GetAllAsync()
+        {
+            return await GetAllEntitiesAsync<Categoria, CategoriaDTO>(
+                _repository.GetAllAsync,
+                CategoriaMapper.ToCategoriaDto,
+                "Categorías");
+        }
 
         public async Task<OperationResult<CategoriaDTO>> GetByIdAsync(int id) =>
             await ExecuteOperationAsync(async () =>
@@ -43,7 +40,6 @@ namespace SGHR.Application.Services.Configuration
         public async Task<OperationResult<CategoriaDTO>> CreateAsync(CreateCategoriaDTO dto) =>
             await ExecuteOperationAsync(async () =>
             {
-                // Validaciones
                 if (!ValidationHelper.Required(dto.Nombre, "Nombre", out var message))
                     return OperationResult<CategoriaDTO>.Fail(message);
 
